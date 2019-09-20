@@ -1,5 +1,7 @@
 import React, {Component} from 'react';
 import './MainText.css';
+import {NotesComponent} from '../notes/NotesComponent';
+import { QuestionComponent } from '../questions/QuestionsComponent';
 
 export class MainTextComponent extends Component{
 
@@ -8,40 +10,21 @@ export class MainTextComponent extends Component{
         this.stateChange = props.stateChange || new Function();
         this.state ={
             value: '',
-            notes:[{
-                text: '',
-                time: ''
-            }],
             questions: []
         };
 
         this.handleChange = this.handleChange.bind(this);
-        this.handleNote = this.handleNote.bind(this);
         this.handleQuestions = this.handleQuestions.bind(this);
+        this.myRefresh = this.myRefresh.bind(this);
 
     }
+
+    
 
     handleChange(event){
         this.setState({value: event.target.value});
     }
 
-    handleNote(event){
-        if(this.state.value.trim() !== ''){
-            let d = new Date();
-            let tempArray = [];
-            tempArray = this.state.notes;
-            let tempObject = {
-                text: this.state.value,
-                time: d.getHours() + ':' + d.getMinutes() + ':' + d.getSeconds() + ' - '
-            }
-            tempArray.push(tempObject);
-            this.setState({
-                    value: '',
-                    notes: tempArray});
-            console.log(this.state.notes);
-        }
-        
-    }
 
     handleQuestions(event){
         if(this.state.value.trim() !== ''){
@@ -55,18 +38,18 @@ export class MainTextComponent extends Component{
         }
        
     }
-
+    myRefresh(event){
+        console.log('Yes');
+            this.setState({
+                value: ''
+            });
+    }
     render(){
-        var notesList = this.state.notes.map((entry) =>
-            <div>                
-                <p>{entry.time}  {entry.text}</p>
-            </div>
-        );
         var questionsList = this.state.questions.map((entry) =>
         <li>{entry}</li>
     );
 
-        return (
+        return ( 
             <div className="wrapper">
                 <div className ="one">
                     <div>
@@ -74,20 +57,16 @@ export class MainTextComponent extends Component{
                         <textarea className='main-text' value={this.state.value} onChange={this.handleChange} rows="10" cols="50"/>
                     </div>
                     <div>
-                    <button onClick={this.handleNote}>Note</button>
-                    <button onClick={this.handleQuestions}>Question</button>
+                        <button onClick={this.myRefresh}>Clear</button>
                     </div>
                 </div>
-               
-                <div className="two">
-                    <label>Notes:</label>
-                    <ul>{notesList}</ul>
+                
+                <div className="two" >
+                    <NotesComponent value={this.state.value} name = 'Notes' />
 
                 </div>
                 <div className="three">
-                    <label>Questions:</label>
-                    <ul>{questionsList}</ul>
-
+                    <QuestionComponent value = {this.state.value} name = 'Questions' />
                 </div>
                     
             
