@@ -21,8 +21,9 @@ export class QuestionComponent extends Component{
             let tempArray = [];
             tempArray = this.state.questions;
             let tempObject = {
-                question: this.props.value,
-                time: d.getHours() + ':' + d.getMinutes() + ':' + d.getSeconds() + ' - '
+                question: this.props.value.match(/Question\(.*?\)/) ,
+                time: d.getHours() + ':' + d.getMinutes() + ':' + d.getSeconds() + ' - ',
+                answer:this.props.value.match(/Answer\(.*?\)/)
             }
             tempArray.push(tempObject);
             this.setState({
@@ -34,7 +35,7 @@ export class QuestionComponent extends Component{
     render(){
         var questionsList = this.state.questions.map((entry) =>
         <div>                
-            <p>{entry.time}  {entry.question}</p>
+            <p>{entry.time}  {entry.question}{entry.answer}</p>
         </div>
     );
 
