@@ -3,7 +3,7 @@ import './MainText.css';
 import {NotesComponent} from '../notes/NotesComponent';
 import { QuestionComponent } from '../questions/QuestionsComponent';
 
-export class MainTextComponent_old extends Component{
+export class MainTextComponent_vOne extends Component{
 
     constructor(props){
         super(props);

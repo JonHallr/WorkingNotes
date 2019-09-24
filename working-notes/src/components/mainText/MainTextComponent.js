@@ -1,47 +1,33 @@
 import React, {Component} from 'react';
 import './MainText.css';
-import {NotesComponent} from '../notes/NotesComponent';
-import { QuestionComponent } from '../questions/QuestionsComponent';
+//import {NotesComponent} from '../notes/NotesComponent';
+//import { QuestionComponent } from '../questions/QuestionsComponent';
 
 export class MainTextComponent extends Component{
 
     constructor(props){
         super(props);
         this.stateChange = props.stateChange || new Function();
+        
         this.state ={
             mainText: '',
+            theNote: '',
             title: '',
             author:'',
-            description:'',
-            notes:[{
-                text: '',
-                time: ''
-            }],
-            questions: [{
-                question: '',
-                answer: '',
-                time: ''
-            }]
-
-            
+            description:''
         };
 
         this.handleChange = this.handleChange.bind(this);
-        this.handleQuestions = this.handleQuestions.bind(this);        
-        this.handleNote = this.handleNote.bind(this);
         this.myRefresh = this.myRefresh.bind(this);
-        this.qa = this.qa.bind(this);
-
+        this.handleDisplayText = this.handleDisplayText.bind(this);
     }
-
-    
 
     handleChange(event){
         //This will handle any state that is not an object or part of an array I pass in the name of the state value and assign that and then assign the value 
         //this is helpful because then I only need one handleChange for at least these simple changes.
-        const target = event.target;
-        const value = target.value;
-        const name = target.name;
+        let target = event.target;
+        let value = target.value;
+        let name = target.name;
         this.setState({
             //value: event.target.value
             [name]: value
@@ -49,63 +35,24 @@ export class MainTextComponent extends Component{
     }
 
 
-
-    handleQuestions(props){
-        if(this.state.mainText.trim() !== ''){
-            let d = new Date();
-            let tempArray = [];
-            tempArray = this.state.questions;
-            let tempObject = {
-                question: this.state.mainText.match(/Question\(.*?\)/) ,
-                time: d.getHours() + ':' + d.getMinutes() + ':' + d.getSeconds() + ' - ',
-                answer:this.state.mainText.match(/Answer\(.*?\)/)
-            }
-            tempArray.push(tempObject);
-            this.setState({
-                questions: tempArray});
-        }
-        
-    }
-
-    handleNote(props){
-        if(this.state.mainText.trim() !== ''){
-            let d = new Date();
-            let tempArray = [];
-            tempArray = this.state.notes;
-            let tempObject = {
-                text: this.state.mainText,
-                time: d.getHours() + ':' + d.getMinutes() + ':' + d.getSeconds() + ' - '
-            }
-            tempArray.push(tempObject);
-            this.setState({
-                    notes: tempArray});
-        }
-        
-    }
-
-
-    qa(event){
+    handleDisplayText(list){
+        console.log(list);
+        let temp = '';
+        list.forEach(element => {
+            temp = temp + "\n" + element.text
+        });
+        let test = this.state.title + "\n" + this.state.author + "\n" + this.state.description + temp;
         this.setState({
-            mainText:'Question()\nAnswer()'
+            theNote: test
         });
     }
+
     myRefresh(event){
             this.setState({
                 mainText: ''
             });
     }
     render(){
-        var questionsList = this.state.questions.map((entry) =>
-            <div>                
-                <p>{entry.time}  {entry.question}{entry.answer}</p>
-            </div>
-        );
-        var notesList = this.state.notes.map((entry) =>
-            <div>                
-                <p>{entry.time}  {entry.text}</p>
-            </div>
-        );
-        var QAtext = 'Questions()/nAnswer()'
 
         return ( 
             <div className="wrapper">
@@ -116,22 +63,12 @@ export class MainTextComponent extends Component{
                     </div>
                     <div>
                         <button onClick={this.myRefresh}>Clear</button>
-                        <button onClick={this.qa}>Question</button>
                     </div>
                 </div>
                 
                 <div className="two" >
-                <div><button onClick={this.handleNote}>Notes</button></div> 
-                    <label>Notes:</label>
-                    <ul>{notesList}</ul>
+                    <TextNoteComponent mainText={this.state.mainText} onFilterTextChange={this.handleDisplayText} doRefresh={this.myRefresh}/>
 
-                </div>
-                <div className="three">
-                    <div>
-                        <button onClick={this.handleQuestions}>Questions</button>
-                    </div> 
-                    <label>Questions:</label>
-                    <ul>{questionsList}</ul>
                 </div>
                 <div className="four">
                     <div>
@@ -140,18 +77,69 @@ export class MainTextComponent extends Component{
                     </div>
                     <div>
                         <label>Author:</label>
-                        <input type="text" value={this.state.author} onChange={this.handleChange} />
+                        <input type="text" name="author" value={this.state.author} onChange={this.handleChange} />
                     </div>
                     <div>
                         <label>Description:</label>
-                        <textarea value={this.state.description} onChange={this.handleChange} />
+                        <textarea value={this.state.description} name="description" onChange={this.handleChange} />
                     </div>
                 </div>
-                    
-            
+
+                <div className="five">
+                    <textarea value={this.state.theNote} />
+                </div>
             </div>
             
         );
     }
 
+}
+
+
+class TextNoteComponent extends Component{
+    constructor(props){
+        super(props);
+        this.state = {
+            textNoteList:[{
+                text: '',
+                time: ''
+            }]
+
+        };
+           this.handleTextNoteList = this.handleTextNoteList.bind(this);
+    }
+
+    handleTextNoteList(props){
+        if(this.props.mainText.trim() !== ''){
+            let d = new Date();
+            let tempArray = [];
+            tempArray = this.state.textNoteList;
+            let tempObject = {
+                text: this.props.mainText,
+                time: d.getHours() + ':' + d.getMinutes() + ':' + d.getSeconds() + ' - '
+            }
+            tempArray.push(tempObject);
+            this.setState({
+                textNoteList: tempArray});
+        }
+        this.props.onFilterTextChange(this.state.textNoteList);
+        this.props.doRefresh();
+    }
+
+    render(){
+        var textNoteListArray = this.state.textNoteList.map((e) =>
+        <div>                
+            <p>{e.time}  {e.text}</p>
+        </div>
+    );
+        return(
+        <div>
+            <div>
+                <button onClick={this.handleTextNoteList}>Notes</button>
+            </div> 
+            <label>Notes:</label>
+            <ul>{textNoteListArray}</ul>
+
+        </div>);
+    }
 }
