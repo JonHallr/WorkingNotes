@@ -35,13 +35,14 @@ export class MainTextComponent extends Component{
     }
 
 
-    handleDisplayText(list){
+    handleDisplayText(list, name){
         console.log(list);
         let temp = '';
+        temp = "\n" + name;
         list.forEach(element => {
             temp = temp + "\n" + element.text
         });
-        let test = this.state.title + "\n" + this.state.author + "\n" + this.state.description + temp;
+        let test = this.state.title + "\n" + this.state.author + "\n" + this.state.description + "\n" + temp;
         this.setState({
             theNote: test
         });
@@ -100,6 +101,7 @@ class TextNoteComponent extends Component{
     constructor(props){
         super(props);
         this.state = {
+            name: '',
             textNoteList:[{
                 text: '',
                 time: ''
@@ -107,6 +109,16 @@ class TextNoteComponent extends Component{
 
         };
            this.handleTextNoteList = this.handleTextNoteList.bind(this);
+           this.handleNameChange = this.handleNameChange.bind(this);
+    }
+    handleNameChange(event){
+        let target = event.target;
+        let value = target.value;
+        let name = target.name;
+        this.setState({
+            //value: event.target.value
+            [name]: value
+        });
     }
 
     handleTextNoteList(props){
@@ -122,7 +134,7 @@ class TextNoteComponent extends Component{
             this.setState({
                 textNoteList: tempArray});
         }
-        this.props.onFilterTextChange(this.state.textNoteList);
+        this.props.onFilterTextChange(this.state.textNoteList, this.state.name);
         this.props.doRefresh();
     }
 
@@ -134,10 +146,10 @@ class TextNoteComponent extends Component{
     );
         return(
         <div>
+            <input type="text" name="name" value={this.state.name} onChange={this.handleNameChange} />
             <div>
-                <button onClick={this.handleTextNoteList}>Notes</button>
-            </div> 
-            <label>Notes:</label>
+                <button onClick={this.handleTextNoteList}>Add</button>
+            </div>
             <ul>{textNoteListArray}</ul>
 
         </div>);
