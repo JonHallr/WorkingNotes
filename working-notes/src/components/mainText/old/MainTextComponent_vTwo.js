@@ -1,7 +1,7 @@
 import React, {Component} from 'react';
 import './MainText.css';
 import {NotesComponent} from '../notes/NotesComponent';
-import { QuestionComponent } from '../questions/QuestionsComponent';
+import { QuestionComponent } from '../../questions/QuestionsComponent';
 
 export class MainTextComponent_vTwo extends Component{
 

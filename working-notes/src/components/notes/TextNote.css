@@ -1,0 +1,41 @@
+.text-note{
+    border-radius: 8px;
+    border: 1px solid #4d5d53;
+    width: 300px;
+    height:275px;
+    overflow: auto;
+    padding-bottom: 0px;
+    box-shadow: 8px 10px 5px #4d5d53;
+}
+.text-note ul{
+    border-radius: 8px;
+    border: 2px solid #4d5d53;
+    list-style-type: none;
+    /*border: 2px solid blue;*/
+    word-wrap: break-word;
+    width: 235px;
+    height: 160px;
+    overflow:auto;
+    position: relative;
+    margin:10px ;
+}
+.text-note p{
+    font-size: 16px;
+    /*border: 2px solid red;*/
+    word-wrap: break-word;
+    position: relative;
+    left: -10%;
+}
+.text-note button{
+        background-color: #4d5d53;
+        color: white;
+        padding: 5px 24px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        margin: 4px 2px;
+        cursor: pointer;
+        border-radius: 8px;
+    
+} 

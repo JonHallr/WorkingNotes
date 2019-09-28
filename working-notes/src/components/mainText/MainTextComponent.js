@@ -1,6 +1,6 @@
 import React, {Component} from 'react';
 import './MainText.css';
-//import {NotesComponent} from '../notes/NotesComponent';
+import {TextNoteComponent} from '../notes/TextNoteComponent';
 //import { QuestionComponent } from '../questions/QuestionsComponent';
 
 export class MainTextComponent extends Component{
@@ -25,6 +25,15 @@ export class MainTextComponent extends Component{
         this.addSection = this.addSection.bind(this);
         this.listUpdate = this.listUpdate.bind(this);
     }
+
+    downloadNoteFile = () => {
+        const x = document.createElement("a");
+        const file = new Blob([this.state.theNote], {type: 'text/plain'});
+        x.href = URL.createObjectURL(file);
+        x.download = "myText.txt";
+        document.body.appendChild(x); // Required for this to work in FireFox
+        x.click();
+      }
 
     handleChange(event){
         //This will handle any state that is not an object or part of an array I pass in the name of the state value and assign that and then assign the value 
@@ -62,7 +71,7 @@ export class MainTextComponent extends Component{
             count ++;
         });
         let test = this.state.title + "\n" + this.state.author + "\n" + this.state.description + "\n" + temp;
-        console.log(test);
+       // console.log(test);
         this.setState({
             theNote: test
         });
@@ -100,9 +109,9 @@ export class MainTextComponent extends Component{
 
         return ( 
             <div className="wrapper">
-                <div className ="one">
+                <div className ="TheAwesomeTextBox">
+                    <h4>The Awesome Text Box</h4>
                     <div>
-                        <h4>The Awesome Text Box</h4>
                         <textarea className='main-text' name="mainText" value={this.state.mainText} onChange={this.handleChange} rows="10" cols="50"/>
                     </div>
                     <div>
@@ -111,31 +120,31 @@ export class MainTextComponent extends Component{
                     <div>
                         <input type="text" name="sectionName" value={this.state.sectionName} onChange={this.handleChange}/>
                         <button onClick={this.addSection}>New Section</button>
-                    </div>
+                        </div>
                 </div>
                 
-                <div className="two" >
-                <div className="wrapper">
-                    {noteSections}
-                </div>                 
-
+                <div className="NoteSection" >
+                    <div className="wrapper">
+                        {noteSections}
+                    </div> 
                 </div>
-                <div className="four">
+                <div className="Overview">
                     <div>
-                        <label>Title:</label>
-                        <input type="text" name="title" defautlValue={this.state.title} onChange={this.handleChange} />
+                        <div><label for="title">Title:</label></div>
+                        <input type="text" id="title" name="title" defautlValue={this.state.title} onChange={this.handleChange} />
                     </div>
                     <div>
-                        <label>Author:</label>
-                        <input type="text" name="author" defautlValue={this.state.author} onChange={this.handleChange} />
+                        <div><label for="author">Author:</label></div>
+                        <input type="text" id="author" name="author" defautlValue={this.state.author} onChange={this.handleChange} />
                     </div>
                     <div>
-                        <label>Description:</label>
-                        <textarea value={this.state.description} name="description" onChange={this.handleChange} />
+                        <div><label for="description">Description:</label></div>
+                        <textarea id="description" value={this.state.description} name="description" onChange={this.handleChange} rows="5" cols="55" />
                     </div>
                 </div>
 
-                <div className="five">
+                <div className="TheNote">
+                    <div><button onClick={this.downloadNoteFile}>Export</button></div>
                     <textarea defautlValue="" value={this.state.theNote} />
                 </div>
             </div>
@@ -145,7 +154,7 @@ export class MainTextComponent extends Component{
 
 }
 
-
+/*
 class TextNoteComponent extends Component{
     constructor(props){
         super(props);
@@ -204,4 +213,4 @@ class TextNoteComponent extends Component{
 
         </div>);
     }
-}
+}*/
