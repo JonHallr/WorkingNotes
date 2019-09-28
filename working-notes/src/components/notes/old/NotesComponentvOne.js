@@ -1,6 +1,6 @@
 import React, {Component} from 'react';
 
-export class NotesComponent extends Component{
+export class NotesComponentvOne extends Component{
 
     constructor(props){
         super(props);
