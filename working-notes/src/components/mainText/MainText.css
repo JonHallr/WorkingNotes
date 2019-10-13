@@ -13,6 +13,7 @@ lightest to darkest
     grid-gap: 10px;
     grid-auto-rows: minmax(100px, auto);
     background:#8f9779 ;
+    padding:10px 10px 0px 10px;
   }
   .TheAwesomeTextBox {
     /*border: 2px solid black;*/
