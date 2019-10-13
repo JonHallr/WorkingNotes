@@ -15,6 +15,7 @@ export class TextNoteComponent extends Component{
            this.handleTextNoteList = this.handleTextNoteList.bind(this);
            this.handleNameChange = this.handleNameChange.bind(this);
            this.somethingRandome = this.somethingRandome.bind(this);
+           this.remove = this.remove.bind(this);
 
     }
     handleNameChange(event){
@@ -32,19 +33,23 @@ export class TextNoteComponent extends Component{
             let tempArray = [];
             tempArray = this.state.textNoteList;
             let tempObject = {
-                text: "-" + this.props.mainText + "\n",
-                time: d.getHours() + ':' + d.getMinutes() + ':' + d.getSeconds() 
+                text: this.props.mainText + "\n",
+                time: d.getHours() + ':' + d.getMinutes() + ':' + d.getSeconds() + " - "
             }
             tempArray.push(tempObject);
             this.setState({
                 textNoteList: tempArray});
         }
-        this.props.onListUpdate(this.state.textNoteList, this.state.name);
+        this.props.onListUpdate(this.state.textNoteList, this.props.sectionId, this.state.name);
         this.props.onFilterTextChange();
         this.props.doRefresh();
     }
     somethingRandome(event){
-        console.log(event.target);
+
+    }
+    remove(props){
+        
+        this.props.deleteSection(this.props.sectionId);
     }
 
     render(){
@@ -55,6 +60,9 @@ export class TextNoteComponent extends Component{
     );
         return(
         <div className='text-note'>
+            <div className ='close'>
+                <button onClick={this.remove}>X</button>
+            </div>
             <input type="text" name="name" defaultValue={this.state.name} onChange={this.handleNameChange} />
             <div>
                 <button onClick={this.handleTextNoteList}>Add</button>

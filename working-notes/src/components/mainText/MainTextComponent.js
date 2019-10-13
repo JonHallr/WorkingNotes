@@ -1,7 +1,7 @@
 import React, {Component} from 'react';
 import './MainText.css';
 import {TextNoteComponent} from '../notes/TextNoteComponent';
-//import { QuestionComponent } from '../questions/QuestionsComponent';
+import {getIndexOfObject} from '../shared/util'
 
 export class MainTextComponent extends Component{
 
@@ -24,6 +24,7 @@ export class MainTextComponent extends Component{
         this.handleDisplayText = this.handleDisplayText.bind(this);
         this.addSection = this.addSection.bind(this);
         this.listUpdate = this.listUpdate.bind(this);
+        this.removeSection = this.removeSection.bind(this);
     }
 
     downloadNoteFile = () => {
@@ -42,18 +43,18 @@ export class MainTextComponent extends Component{
         let value = target.value;
         let name = target.name;
         this.setState({
-            //value: event.target.value
             [name]: value
         });
     }
-    listUpdate(list,name){
+    listUpdate(list,id, name){
         let tempSection = this.state.sectionList;
         let count = 0;
         list.forEach((a)=>{
             let tempData = this.state.sectionList.findIndex(function (e){
-                return e.name === name ? e : null;
+                return e.section === id ? e : null;
             });
-            tempSection[tempData].text = count > 0 ? tempSection[tempData].text +(a.time +  a.text): a.time +  a.text;
+            tempSection[tempData].name = name;
+            tempSection[tempData].text = count > 0 ? tempSection[tempData].text + (a.time +  a.text): a.time + a.text;
             count ++;
         });
         this.setState({
@@ -62,16 +63,13 @@ export class MainTextComponent extends Component{
     }
 
     handleDisplayText(event){
-        console.log("made it");
         let temp = '';
-        console.log(this.state.sectionList);
         let count = 0;
         this.state.sectionList.forEach((e)=>{
             temp = count > 0 ? temp + "\n" + e.name + "\n" + e.text : e.name + "\n" + e.text;
             count ++;
         });
         let test = this.state.title + "\n" + this.state.author + "\n" + this.state.description + "\n" + temp;
-       // console.log(test);
         this.setState({
             theNote: test
         });
@@ -84,26 +82,36 @@ export class MainTextComponent extends Component{
     }
 
     addSection(event){
-        let hv = this.state.sectionList.length > 0 ? true : false;
+        var templateList = this.state.sectionName.split(";");
+        templateList.forEach((name)=> {
+            let hv = this.state.sectionList.length > 0 ? true : false;
+            let temp = this.state.sectionList;
+            let os = hv ? temp[temp.length - 1] : 0;
+            let ns = hv ? os.section + 1 : os + 1;
+            let tempObj ={
+                name: name,
+                section: ns,
+                text: '',
+                time:''
+            }
+            temp.push(tempObj);
+            this.setState({            
+                sectionName:'',
+                sectionList: temp
+            });
+        });
+    }
+    removeSection(key){
         let temp = this.state.sectionList;
-        let os = hv ? temp[temp.length - 1] : 0;
-        let ns = hv ? os.section + 1 : os + 1;
-        let tempObj ={
-            name: this.state.sectionName,
-            section: ns,
-            text: '',
-            time:''
-        }
-        temp.push(tempObj);
-        this.setState({            
-            sectionName:'',
+        temp.splice(getIndexOfObject(key, temp, "section"),1);
+        this.setState({
             sectionList: temp
         });
     }
     render(){
         let noteSections = this.state.sectionList.map((e) =>
         <div>
-            <TextNoteComponent key={"section_"+e.section.toString()} namePass={e.name} className={"section_"+e.toString()} mainText={this.state.mainText} onFilterTextChange={this.handleDisplayText} onListUpdate={this.listUpdate} doRefresh={this.myRefresh}/>
+            <TextNoteComponent key={"section_" + e.section.toString()} sectionId={e.section} deleteSection={this.removeSection} namePass={e.name} className={"section_"+e.toString()} mainText={this.state.mainText} onFilterTextChange={this.handleDisplayText} onListUpdate={this.listUpdate} doRefresh={this.myRefresh}/>
         </div>
         )
 
@@ -154,63 +162,3 @@ export class MainTextComponent extends Component{
 
 }
 
-/*
-class TextNoteComponent extends Component{
-    constructor(props){
-        super(props);
-        this.state = {
-            name: this.props.namePass,
-            textNoteList:[{
-                text: '',
-                time: ''
-            }]
-
-        };
-           this.handleTextNoteList = this.handleTextNoteList.bind(this);
-           this.handleNameChange = this.handleNameChange.bind(this);
-
-    }
-    handleNameChange(event){
-        let target = event.target;
-        let value = target.value;
-        let name = target.name;
-        this.setState({
-            [name]: value
-        });
-    }
-
-    handleTextNoteList(props){
-        if(this.props.mainText.trim() !== ''){
-            let d = new Date();
-            let tempArray = [];
-            tempArray = this.state.textNoteList;
-            let tempObject = {
-                text: "-" + this.props.mainText + "\n",
-                time: d.getHours() + ':' + d.getMinutes() + ':' + d.getSeconds() 
-            }
-            tempArray.push(tempObject);
-            this.setState({
-                textNoteList: tempArray});
-        }
-        this.props.onListUpdate(this.state.textNoteList, this.state.name);
-        this.props.onFilterTextChange();
-        this.props.doRefresh();
-    }
-
-    render(){
-        var textNoteListArray = this.state.textNoteList.map((e) =>
-        <div key={e.time.toString() + e.text.length}>                
-            {e.time}  {e.text}
-        </div>
-    );
-        return(
-        <div>
-            <input type="text" name="name" defaultValue={this.state.name} onChange={this.handleNameChange} />
-            <div>
-                <button onClick={this.handleTextNoteList}>Add</button>
-            </div>
-            <ul>{textNoteListArray}</ul>
-
-        </div>);
-    }
-}*/
