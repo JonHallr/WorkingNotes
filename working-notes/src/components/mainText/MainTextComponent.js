@@ -25,6 +25,7 @@ export class MainTextComponent extends Component{
         this.addSection = this.addSection.bind(this);
         this.listUpdate = this.listUpdate.bind(this);
         this.removeSection = this.removeSection.bind(this);
+        this.edit = this.edit.bind(this);
     }
 
     downloadNoteFile = () => {
@@ -48,15 +49,21 @@ export class MainTextComponent extends Component{
     }
     listUpdate(list,id, name){
         let tempSection = this.state.sectionList;
-        let count = 0;
-        list.forEach((a)=>{
-            let tempData = this.state.sectionList.findIndex(function (e){
-                return e.section === id ? e : null;
-            });
-            tempSection[tempData].name = name;
-            tempSection[tempData].text = count > 0 ? tempSection[tempData].text + (a.time +  a.text): a.time + a.text;
-            count ++;
+        let tempTexts = [];
+        let tempData = this.state.sectionList.findIndex(function (e){
+            return e.section === id ? e : null;
         });
+        list.forEach((a)=>{
+            let tempTextObject = {
+                id: tempSection[tempData].text.length,
+                text: a.text,
+                time: a.time
+            }
+           tempSection[tempData].name = name;
+           tempTexts.push(tempTextObject);
+        });
+        
+        tempSection[tempData].text = tempTexts;
         this.setState({
             sectionList: tempSection
         });
@@ -66,8 +73,12 @@ export class MainTextComponent extends Component{
         let temp = '';
         let count = 0;
         this.state.sectionList.forEach((e)=>{
-            temp = count > 0 ? temp + "\n" + e.name + "\n" + e.text : e.name + "\n" + e.text;
-            count ++;
+            temp = count > 0 ? temp + "\n" + e.name: e.name + "\n" 
+            e.text.forEach((a)=>{
+                temp = temp + "\n" +  (a.time + "\n" + a.text );                
+            });
+            count ++;            
+            
         });
         let test = this.state.title + "\n" + this.state.author + "\n" + this.state.description + "\n" + temp;
         this.setState({
@@ -91,8 +102,7 @@ export class MainTextComponent extends Component{
             let tempObj ={
                 name: name,
                 section: ns,
-                text: '',
-                time:''
+                text:[]
             }
             temp.push(tempObj);
             this.setState({            
@@ -108,10 +118,21 @@ export class MainTextComponent extends Component{
             sectionList: temp
         });
     }
+
+    edit(id){
+        let temp = this.state.sectionList;
+        temp.forEach((e)=>{
+            if(e.section == id){
+                this.setState({
+                    mainText: e.text
+                });
+            }
+        })
+    }
     render(){
         let noteSections = this.state.sectionList.map((e) =>
         <div>
-            <TextNoteComponent key={"section_" + e.section.toString()} sectionId={e.section} deleteSection={this.removeSection} namePass={e.name} className={"section_"+e.toString()} mainText={this.state.mainText} onFilterTextChange={this.handleDisplayText} onListUpdate={this.listUpdate} doRefresh={this.myRefresh}/>
+            <TextNoteComponent key={"section_" + e.section.toString()} sectionId={e.section} deleteSection={this.removeSection} namePass={e.name} className={"section_"+e.toString()} mainText={this.state.mainText} onFilterTextChange={this.handleDisplayText} onListUpdate={this.listUpdate} doRefresh={this.myRefresh} edit={this.edit}/>
         </div>
         )
 

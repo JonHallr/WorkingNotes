@@ -7,6 +7,7 @@ export class TextNoteComponent extends Component{
         this.state = {
             name: this.props.namePass,
             textNoteList:[{
+                id: 0,
                 text: '',
                 time: ''
             }]
@@ -30,11 +31,13 @@ export class TextNoteComponent extends Component{
     handleTextNoteList(props){
         if(this.props.mainText.trim() !== ''){
             let d = new Date();
+            let tempId = this.state.textNoteList.length;
             let tempArray = [];
             tempArray = this.state.textNoteList;
             let tempObject = {
+                id: tempId,
                 text: this.props.mainText + "\n",
-                time: d.getHours() + ':' + d.getMinutes() + ':' + d.getSeconds() + " - "
+                time: d.getHours() + ":" + d.getMinutes() + ":" + d.getSeconds() + "\n"
             }
             tempArray.push(tempObject);
             this.setState({
@@ -45,7 +48,9 @@ export class TextNoteComponent extends Component{
         this.props.doRefresh();
     }
     somethingRandome(event){
-
+        let temp = event.target.id;
+        console.log(temp);
+        this.props.edit(temp);
     }
     remove(props){
         
@@ -54,8 +59,8 @@ export class TextNoteComponent extends Component{
 
     render(){
         var textNoteListArray = this.state.textNoteList.map((e) =>
-        <div key={e.time.toString() + e.text.length} onClick={this.somethingRandome}>                
-            <p>{e.time + e.text}</p>
+        <div key={e.time.toString() + e.text.length} >                
+            <p id={e.id} onClick={this.somethingRandome}>{e.time + e.text}</p>
         </div>
     );
         return(
