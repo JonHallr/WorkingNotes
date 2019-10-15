@@ -1,21 +1,23 @@
 import React, {Component} from 'react';
 import './TextNote.css';
+/*
 
+  id: 0,
+  text: '',
+  time: ''
+            
+*/
 export class TextNoteComponent extends Component{
     constructor(props){
         super(props);
         this.state = {
             name: this.props.namePass,
-            textNoteList:[{
-                id: 0,
-                text: '',
-                time: ''
-            }]
+            textNoteList:[]
 
         };
            this.handleTextNoteList = this.handleTextNoteList.bind(this);
            this.handleNameChange = this.handleNameChange.bind(this);
-           this.somethingRandome = this.somethingRandome.bind(this);
+           this.onClickEdit = this.onClickEdit.bind(this);
            this.remove = this.remove.bind(this);
 
     }
@@ -28,7 +30,7 @@ export class TextNoteComponent extends Component{
         });
     }
 
-    handleTextNoteList(props){
+    handleTextNoteList(){
         if(this.props.mainText.trim() !== ''){
             let d = new Date();
             let tempId = this.state.textNoteList.length;
@@ -47,12 +49,12 @@ export class TextNoteComponent extends Component{
         this.props.onFilterTextChange();
         this.props.doRefresh();
     }
-    somethingRandome(event){
+    onClickEdit(event){
+        console.log(event.target.id);
         let temp = event.target.id;
-        console.log(temp);
-        this.props.edit(temp);
+        this.props.edit(temp, this.props.sectionId);
     }
-    remove(props){
+    remove(){
         
         this.props.deleteSection(this.props.sectionId);
     }
@@ -60,7 +62,7 @@ export class TextNoteComponent extends Component{
     render(){
         var textNoteListArray = this.state.textNoteList.map((e) =>
         <div key={e.time.toString() + e.text.length} >                
-            <p id={e.id} onClick={this.somethingRandome}>{e.time + e.text}</p>
+            <p id={e.id} onClick={this.onClickEdit}>{e.time + e.text}</p>
         </div>
     );
         return(
