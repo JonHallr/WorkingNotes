@@ -53,9 +53,10 @@ export class MainTextComponent extends Component{
         let tempData = this.state.sectionList.findIndex(function (e){
             return e.section === id ? e : null;
         });
+        let count = 0;
         list.forEach((a)=>{
             let tempTextObject = {
-                id: tempSection[tempData].text.length,
+                id: count++,
                 text: a.text,
                 time: a.time
             }
@@ -63,18 +64,18 @@ export class MainTextComponent extends Component{
            tempTexts.push(tempTextObject);
         });
         
-        tempSection[tempData].text = tempTexts;
+        tempSection[tempData].texts = tempTexts;
         this.setState({
             sectionList: tempSection
         });
     }
 
-    handleDisplayText(event){
+    handleDisplayText(){
         let temp = '';
         let count = 0;
         this.state.sectionList.forEach((e)=>{
             temp = count > 0 ? temp + "\n" + e.name: e.name + "\n" 
-            e.text.forEach((a)=>{
+            e.texts.forEach((a)=>{
                 temp = temp + "\n" +  (a.time + "\n" + a.text );                
             });
             count ++;            
@@ -86,13 +87,13 @@ export class MainTextComponent extends Component{
         });
     }
 
-    myRefresh(event){
+    myRefresh(){
             this.setState({
                 mainText: ''
             });
     }
 
-    addSection(event){
+    addSection(){
         var templateList = this.state.sectionName.split(";");
         templateList.forEach((name)=> {
             let hv = this.state.sectionList.length > 0 ? true : false;
@@ -102,7 +103,7 @@ export class MainTextComponent extends Component{
             let tempObj ={
                 name: name,
                 section: ns,
-                text:[]
+                texts:[]
             }
             temp.push(tempObj);
             this.setState({            
@@ -119,10 +120,14 @@ export class MainTextComponent extends Component{
         });
     }
 
-    edit(id){
-        let temp = this.state.sectionList;
+    edit(id, sectionid){
+        let tempData = this.state.sectionList.findIndex(function (e){
+            return e.section === sectionid ? e : null;
+        });
+        let temp = this.state.sectionList[tempData].texts;
+        console.log(temp);
         temp.forEach((e)=>{
-            if(e.section == id){
+            if(e.id == id){
                 this.setState({
                     mainText: e.text
                 });
