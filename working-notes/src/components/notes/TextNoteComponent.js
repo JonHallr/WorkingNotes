@@ -11,17 +11,20 @@ export class TextNoteComponent extends Component{
     constructor(props){
         super(props);
         this.state = {
-            name: this.props.namePass,
-            textNoteList:[]
+            name: this.props.selectedName,
+            textNoteList:this.props.selectedTexts,
+            temp: this.props.selectedValue
 
         };
            this.handleTextNoteList = this.handleTextNoteList.bind(this);
            this.handleNameChange = this.handleNameChange.bind(this);
            this.onClickEdit = this.onClickEdit.bind(this);
            this.remove = this.remove.bind(this);
+           this.try = this.try.bind(this);
 
     }
     handleNameChange(event){
+        console.log("handleNameChange");
         let target = event.target;
         let value = target.value;
         let name = target.name;
@@ -31,6 +34,8 @@ export class TextNoteComponent extends Component{
     }
 
     handleTextNoteList(){
+        
+        console.log("handleTextNoteList");
         if(this.props.mainText.trim() !== ''){
             let d = new Date();
             let tempId = this.state.textNoteList.length;
@@ -50,31 +55,32 @@ export class TextNoteComponent extends Component{
         this.props.doRefresh();
     }
     onClickEdit(event){
-        console.log(event.target.id);
+        console.log("onClickEdit");
         let temp = event.target.id;
         this.props.edit(temp, this.props.sectionId);
     }
     remove(){
         
+        console.log("remove");
         this.props.deleteSection(this.props.sectionId);
+    }
+    try(){
+        
+        console.log("try");
+        console.log(this.state);
     }
 
     render(){
-        var textNoteListArray = this.state.textNoteList.map((e) =>
-        <div key={e.time.toString() + e.text.length} >                
-            <p id={e.id} onClick={this.onClickEdit}>{e.time + e.text}</p>
-        </div>
-    );
+        console.log("textNoteSection");
+
         return(
         <div className='text-note'>
             <div className ='close'>
                 <button onClick={this.remove}>X</button>
             </div>
-            <input type="text" name="name" defaultValue={this.state.name} onChange={this.handleNameChange} />
-            <div>
-                <button onClick={this.handleTextNoteList}>Add</button>
-            </div>
-            <ul>{textNoteListArray}</ul>
+            <button onClick={this.try}>Try</button>
+            <input type="text" name="name" defaultValue={this.props.selectedName} onChange={this.handleNameChange} />
+            <ul>{this.props.selectedTexts}</ul>
 
         </div>);
     }

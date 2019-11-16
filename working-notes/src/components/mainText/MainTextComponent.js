@@ -16,6 +16,8 @@ export class MainTextComponent extends Component{
             title: '',
             author:'',
             description:'',
+            selectedNote: {},
+            selectedDisplayText: '',
             sectionList: []
         };
 
@@ -23,9 +25,13 @@ export class MainTextComponent extends Component{
         this.myRefresh = this.myRefresh.bind(this);
         this.handleDisplayText = this.handleDisplayText.bind(this);
         this.addSection = this.addSection.bind(this);
-        this.listUpdate = this.listUpdate.bind(this);
+        //this.listUpdate = this.listUpdate.bind(this);
         this.removeSection = this.removeSection.bind(this);
         this.edit = this.edit.bind(this);
+
+        this.testing = this.testing.bind(this);
+        this.testAdd = this.testAdd.bind(this);
+        this.setText = this.setText.bind(this);
     }
 
     downloadNoteFile = () => {
@@ -47,30 +53,9 @@ export class MainTextComponent extends Component{
             [name]: value
         });
     }
-    listUpdate(list,id, name){
-        let tempSection = this.state.sectionList;
-        let tempTexts = [];
-        let tempData = this.state.sectionList.findIndex(function (e){
-            return e.section === id ? e : null;
-        });
-        let count = 0;
-        list.forEach((a)=>{
-            let tempTextObject = {
-                id: count++,
-                text: a.text,
-                time: a.time
-            }
-           tempSection[tempData].name = name;
-           tempTexts.push(tempTextObject);
-        });
-        
-        tempSection[tempData].texts = tempTexts;
-        this.setState({
-            sectionList: tempSection
-        });
-    }
 
     handleDisplayText(){
+        console.log("handleDisplayText");
         let temp = '';
         let count = 0;
         this.state.sectionList.forEach((e)=>{
@@ -88,12 +73,15 @@ export class MainTextComponent extends Component{
     }
 
     myRefresh(){
+        console.log("myRefresh");
             this.setState({
                 mainText: ''
             });
+            console.log(this.state);
     }
 
     addSection(){
+        console.log("addSection");
         var templateList = this.state.sectionName.split(";");
         templateList.forEach((name)=> {
             let hv = this.state.sectionList.length > 0 ? true : false;
@@ -108,11 +96,13 @@ export class MainTextComponent extends Component{
             temp.push(tempObj);
             this.setState({            
                 sectionName:'',
-                sectionList: temp
+                sectionList: temp,
+                selectedNote: tempObj
             });
         });
     }
     removeSection(key){
+        console.log("removeSection");
         let temp = this.state.sectionList;
         temp.splice(getIndexOfObject(key, temp, "section"),1);
         this.setState({
@@ -121,62 +111,129 @@ export class MainTextComponent extends Component{
     }
 
     edit(id, sectionid){
+        console.log("edit");
         let tempData = this.state.sectionList.findIndex(function (e){
-            return e.section === sectionid ? e : null;
+            return e.section === sectionid ? e : -1;
         });
         let temp = this.state.sectionList[tempData].texts;
-        console.log(temp);
         temp.forEach((e)=>{
-            if(e.id == id){
+            if(e.id === id){
                 this.setState({
                     mainText: e.text
                 });
             }
         })
     }
+
+    testing(event){
+        console.log("testing");
+        let dataIndex = event.target.id - 1;
+        let selectedTemp = {};
+        selectedTemp =  this.state.sectionList[dataIndex];
+        this.setState({
+            selectedNote: selectedTemp
+        });
+        console.log(this.state.selectedNote);
+        this.setText(dataIndex);
+    }
+
+    testAdd(event){
+        console.log("testAdd");
+        let dataIndex = event.target.id - 1;
+        if(this.state.mainText.trim() !== ''){
+            let d = new Date();
+            let tempId = this.state.sectionList[dataIndex].texts.length;
+            let tempArray = [];
+            tempArray = this.state.sectionList;
+            let tempObject = {
+                id: tempId,
+                text: this.state.mainText + "\n",
+                time: d.getHours() + ":" + d.getMinutes() + ":" + d.getSeconds() + "\n"
+            }
+            tempArray[dataIndex].texts.push(tempObject);
+            this.setState({
+                sectionList: tempArray,
+                selectedNote: tempArray[dataIndex]
+            });
+        }
+        this.setText(dataIndex);
+        this.handleDisplayText();
+        this.myRefresh();
+        
+        
+    }
+    setText(id){
+        console.log("setText");
+                    let textList = this.state.sectionList[id].texts.map((e)=>
+                    <div key={e.time.toString() + e.text.length} >                
+                        <p id={e.id} onClick={this.onClickEdit}>{e.time + e.text}</p>
+                    </div>
+                    ) ;
+                    console.log(textList);
+                    this.setState({
+                        selectedDisplayText: textList
+                    });
+    }
     render(){
         let noteSections = this.state.sectionList.map((e) =>
         <div>
             <TextNoteComponent key={"section_" + e.section.toString()} sectionId={e.section} deleteSection={this.removeSection} namePass={e.name} className={"section_"+e.toString()} mainText={this.state.mainText} onFilterTextChange={this.handleDisplayText} onListUpdate={this.listUpdate} doRefresh={this.myRefresh} edit={this.edit}/>
         </div>
-        )
+        );
+        let noteSelection = this.state.sectionList.map((e)=>
+        <li>
+            <div align="left" className="inline-box-align" onClick={this.testing} id={e.section}>
+                {e.name}
+            </div>
+            <div className="inline-box-align">
+                <button onClick={this.testAdd} id={e.section}>Add</button>
+            </div>            
+        </li>
+        );
+     
 
         return ( 
             <div className="wrapper">
-                <div className ="TheAwesomeTextBox">
-                    <h4>The Awesome Text Box</h4>
-                    <div>
-                        <textarea className='main-text' name="mainText" value={this.state.mainText} onChange={this.handleChange} rows="10" cols="50"/>
-                    </div>
-                    <div>
-                        <button onClick={this.myRefresh}>Clear</button>
-                    </div>
-                    <div>
-                        <input type="text" name="sectionName" value={this.state.sectionName} onChange={this.handleChange}/>
-                        <button onClick={this.addSection}>New Section</button>
+                <div className="Overview">
+                    <div className="wrapper">
+                        <div className="OverviewChild">
+                            <label for="title">Title:</label>
+                            <input  type="text" id="title" name="title" defautlValue={this.state.title} onChange={this.handleChange} />
                         </div>
+                        <div className="OverviewChild">
+                            <label for="author">Author:</label>
+                            <input  type="text" id="author" name="author" defautlValue={this.state.author} onChange={this.handleChange} />                            
+                        </div>
+                    </div>                    
                 </div>
-                
+                <div className ="TheAwesomeTextBox">                    
+                    <div className="wrapper">
+                        <div className="TheAwesomeTextBoxChild" id="TheAwesomeTextBox">
+                            <h2>The Awesome Text Box</h2>
+                            <div>
+                                <textarea className='main-text' name="mainText" value={this.state.mainText} onChange={this.handleChange} rows="10" cols="50"/>
+                            </div>
+                            <div>
+                                <button onClick={this.myRefresh}>Clear</button>
+                            </div>                   
+                        </div>
+                        <div className="TheAwesomeTextBoxChild" id="NoteSectionList">
+                            <div>
+                                <input type="text" name="sectionName" value={this.state.sectionName} onChange={this.handleChange}/>
+                                <button onClick={this.addSection}>New Section</button>
+                            </div> 
+                            <ul>
+                                {noteSelection}
+                            </ul>
+                        </div>
+                    
+                    </div>
+                </div>                
                 <div className="NoteSection" >
                     <div className="wrapper">
-                        {noteSections}
+                        <TextNoteComponent selectedValue={this.state.selectedNote} selectedName={this.state.selectedNote.name} selectedSection={this.state.selectedNote.section} selectedTexts={this.state.selectedDisplayText} />
                     </div> 
                 </div>
-                <div className="Overview">
-                    <div>
-                        <div><label for="title">Title:</label></div>
-                        <input type="text" id="title" name="title" defautlValue={this.state.title} onChange={this.handleChange} />
-                    </div>
-                    <div>
-                        <div><label for="author">Author:</label></div>
-                        <input type="text" id="author" name="author" defautlValue={this.state.author} onChange={this.handleChange} />
-                    </div>
-                    <div>
-                        <div><label for="description">Description:</label></div>
-                        <textarea id="description" value={this.state.description} name="description" onChange={this.handleChange} rows="5" cols="55" />
-                    </div>
-                </div>
-
                 <div className="TheNote">
                     <div><button onClick={this.downloadNoteFile}>Export</button></div>
                     <textarea defautlValue="" value={this.state.theNote} />
