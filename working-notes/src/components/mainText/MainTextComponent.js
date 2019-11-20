@@ -1,6 +1,6 @@
 import React, {Component} from 'react';
 import './MainText.css';
-import {TextNoteComponent} from '../notes/TextNoteComponent';
+//import {TextNoteComponent} from '../notes/TextNoteComponent';
 import {getIndexOfObject} from '../shared/util'
 
 export class MainTextComponent extends Component{
@@ -18,7 +18,10 @@ export class MainTextComponent extends Component{
             description:'',
             selectedNote: {},
             selectedDisplayText: '',
-            sectionList: []
+            sectionList: [],
+            tagList:[],
+            saveTag : '',
+            tagTrigger : ''
         };
 
         this.handleChange = this.handleChange.bind(this);
@@ -32,6 +35,7 @@ export class MainTextComponent extends Component{
         this.testing = this.testing.bind(this);
         this.testAdd = this.testAdd.bind(this);
         this.setText = this.setText.bind(this);
+        this.onOff = this.onOff.bind(this);
     }
 
     downloadNoteFile = () => {
@@ -49,6 +53,30 @@ export class MainTextComponent extends Component{
         let target = event.target;
         let value = target.value;
         let name = target.name;
+
+        let check = value.charAt(value.length - 1);
+        let tempTag = this.state.saveTag;
+        let tagIndicater = this.state.tagTrigger;
+        if(check === '*' || check === '-'){
+            tagIndicater += check;
+            this.setState({
+                tagTrigger: tagIndicater
+            });
+        }else if(tagIndicater === '*-' && check !== ' '){
+            tempTag += check;
+            this.setState({
+                saveTag: tempTag
+            });
+        }else if(tagIndicater === '*-' && check === ' '){
+            let temp = this.state.tagList;
+            temp.push(tempTag);
+            this.setState({
+                tagList: temp,
+                tagTrigger: '',
+                saveTag: ''
+            });
+            console.log(this.state.tagList);
+        }
         this.setState({
             [name]: value
         });
@@ -63,10 +91,11 @@ export class MainTextComponent extends Component{
             e.texts.forEach((a)=>{
                 temp = temp + "\n" +  (a.time + "\n" + a.text );                
             });
-            count ++;            
-            
+            count ++;       
         });
         let test = this.state.title + "\n" + this.state.author + "\n" + this.state.description + "\n" + temp;
+        console.log()
+        test = test.replace(/[*-]/g, '');
         this.setState({
             theNote: test
         });
@@ -97,7 +126,8 @@ export class MainTextComponent extends Component{
             this.setState({            
                 sectionName:'',
                 sectionList: temp,
-                selectedNote: tempObj
+                selectedNote: tempObj,
+                selectedDisplayText: ''
             });
         });
     }
@@ -139,21 +169,33 @@ export class MainTextComponent extends Component{
 
     testAdd(event){
         console.log("testAdd");
+        console.log(this.state.tagList);
         let dataIndex = event.target.id - 1;
         if(this.state.mainText.trim() !== ''){
             let d = new Date();
             let tempId = this.state.sectionList[dataIndex].texts.length;
             let tempArray = [];
             tempArray = this.state.sectionList;
+            let tempTagString = '';
+            this.state.tagList.forEach((a) =>{
+                tempTagString += a + ', '; 
+            });
+            let tempText = this.state.mainText;
+            tempText = tempText.replace(/[*-]/g,'');
+            let tempTagList = this.state.tagList;
             let tempObject = {
                 id: tempId,
-                text: this.state.mainText + "\n",
-                time: d.getHours() + ":" + d.getMinutes() + ":" + d.getSeconds() + "\n"
+                text: tempText + "\n",
+                time: d.getHours() + ":" + d.getMinutes() + ":" + d.getSeconds(),
+                visible: 'collapse',
+                tags: tempTagList,
+                tagString: tempTagString 
             }
             tempArray[dataIndex].texts.push(tempObject);
             this.setState({
                 sectionList: tempArray,
-                selectedNote: tempArray[dataIndex]
+                selectedNote: tempArray[dataIndex],
+                tagList: []
             });
         }
         this.setText(dataIndex);
@@ -162,32 +204,77 @@ export class MainTextComponent extends Component{
         
         
     }
-    setText(id){
-        console.log("setText");
-                    let textList = this.state.sectionList[id].texts.map((e)=>
-                    <div key={e.time.toString() + e.text.length} >                
-                        <p id={e.id} onClick={this.onClickEdit}>{e.time + e.text}</p>
-                    </div>
-                    ) ;
-                    console.log(textList);
-                    this.setState({
-                        selectedDisplayText: textList
-                    });
+
+    onOff(event){
+        console.log("onOff");
+        if(event != undefined){
+            //let id= 0;
+
+             let id = event.target.id;
+             let temp = this.state.selectedNote;
+             temp.texts.forEach((a)=>{
+                 if(a.id == id){
+                     switch(a.visible){
+                         case 'visible':
+                             a.visible = 'collapse';
+                             break;
+                         case 'collapse':
+                             a.visible = 'visible';
+                             break;
+                         default:
+                             break;
+                     }
+                 }
+             });
+             this.setState({
+                 selectedNote: temp
+             });
+             this.setText(temp.section - 1);
+             
+        }
+        
     }
+    /*
+
+                <td id={e.id}><div id={e.id}>{e.visible == 'visible' ? '-':'+'}</div><div id={e.id}> {e.time} - {e.text.slice(0,40)}</div></td>
+            <tr className="noteSectionBackground" >
+                <td className="tagFormat">{e.tagString}</td>
+            </tr>
+    */
+    setText(id){
+        let textList = this.state.sectionList[id].texts.map((e)=> 
+        <table>
+            <tr className="noteSectionBackground" id={e.id} onClick={this.onOff}>
+                <td id={e.id}><div id={e.id}>{e.visible == 'visible' ? '-':'+'}</div><div id={e.id}> {e.time} - {e.text.slice(0,40)}</div></td>
+            </tr>
+            <tr style={{visibility: e.visible}}>
+                <td className="textareaFormat"><textarea value={e.text} rows="10" cols="100"/></td>
+                <td className="tagFormat">{e.tagString}</td>
+            </tr>
+        </table>        
+        ) ;
+         console.log(textList);
+         this.setState({
+              selectedDisplayText: textList
+          });
+    }
+    onTagChange(event){
+        console.log(event);
+    }
+
+
     render(){
-        let noteSections = this.state.sectionList.map((e) =>
-        <div>
-            <TextNoteComponent key={"section_" + e.section.toString()} sectionId={e.section} deleteSection={this.removeSection} namePass={e.name} className={"section_"+e.toString()} mainText={this.state.mainText} onFilterTextChange={this.handleDisplayText} onListUpdate={this.listUpdate} doRefresh={this.myRefresh} edit={this.edit}/>
-        </div>
-        );
         let noteSelection = this.state.sectionList.map((e)=>
-        <li>
-            <div align="left" className="inline-box-align" onClick={this.testing} id={e.section}>
-                {e.name}
-            </div>
+        <li className="leftAlign">
             <div className="inline-box-align">
-                <button onClick={this.testAdd} id={e.section}>Add</button>
-            </div>            
+                <button onClick={this.testAdd} id={e.section}>+</button>
+            </div> 
+            <div className="inline-box-align" onClick={this.testing} id={e.section}>
+                {e.name}
+            </div> 
+            <div className="inline-box-align" id="entryNumber">
+                {e.texts.length}
+            </div>          
         </li>
         );
      
@@ -197,12 +284,12 @@ export class MainTextComponent extends Component{
                 <div className="Overview">
                     <div className="wrapper">
                         <div className="OverviewChild">
-                            <label for="title">Title:</label>
-                            <input  type="text" id="title" name="title" defautlValue={this.state.title} onChange={this.handleChange} />
+                            <label htmlFor="title">Title:</label>
+                            <input  type="text" id="title" name="title" value={this.state.title} onChange={this.handleChange} />
                         </div>
                         <div className="OverviewChild">
-                            <label for="author">Author:</label>
-                            <input  type="text" id="author" name="author" defautlValue={this.state.author} onChange={this.handleChange} />                            
+                            <label htmlFor="author">Author:</label>
+                            <input  type="text" id="author" name="author" value={this.state.author} onChange={this.handleChange} />                            
                         </div>
                     </div>                    
                 </div>
@@ -212,7 +299,7 @@ export class MainTextComponent extends Component{
                             <h2>The Awesome Text Box</h2>
                             <div>
                                 <textarea className='main-text' name="mainText" value={this.state.mainText} onChange={this.handleChange} rows="10" cols="50"/>
-                            </div>
+                            </div>                           
                             <div>
                                 <button onClick={this.myRefresh}>Clear</button>
                             </div>                   
@@ -231,12 +318,17 @@ export class MainTextComponent extends Component{
                 </div>                
                 <div className="NoteSection" >
                     <div className="wrapper">
-                        <TextNoteComponent selectedValue={this.state.selectedNote} selectedName={this.state.selectedNote.name} selectedSection={this.state.selectedNote.section} selectedTexts={this.state.selectedDisplayText} />
+                    <div id="info_section">
+                    <label>{this.state.selectedNote.name}</label>
+                    </div>
+                    <div id="notes">
+                        {this.state.selectedDisplayText}
+                    </div>
                     </div> 
                 </div>
                 <div className="TheNote">
                     <div><button onClick={this.downloadNoteFile}>Export</button></div>
-                    <textarea defautlValue="" value={this.state.theNote} />
+                    <textarea value={this.state.theNote} readOnly/>
                 </div>
             </div>
             
