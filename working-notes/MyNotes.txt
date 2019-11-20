@@ -1,0 +1,6 @@
+regular expression that looks for '*-' and then pulls everything up to the next space
+works: /(\*\-[^\s]+)/g
+
+
+
+this is just a test

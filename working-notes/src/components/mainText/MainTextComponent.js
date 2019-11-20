@@ -10,6 +10,7 @@ export class MainTextComponent extends Component{
         this.stateChange = props.stateChange || new Function();
         
         this.state ={
+            active: 'F',
             sectionName:'',
             mainText: '',
             theNote: '',
@@ -19,8 +20,8 @@ export class MainTextComponent extends Component{
             selectedNote: {},
             selectedDisplayText: '',
             sectionList: [],
-            tagList:[],
-            saveTag : '',
+            globalTagList:[],
+            wordCheck : '',
             tagTrigger : ''
         };
 
@@ -28,16 +29,23 @@ export class MainTextComponent extends Component{
         this.myRefresh = this.myRefresh.bind(this);
         this.handleDisplayText = this.handleDisplayText.bind(this);
         this.addSection = this.addSection.bind(this);
-        //this.listUpdate = this.listUpdate.bind(this);
         this.removeSection = this.removeSection.bind(this);
         this.edit = this.edit.bind(this);
 
-        this.testing = this.testing.bind(this);
+        this.selectNote = this.selectNote.bind(this);
         this.testAdd = this.testAdd.bind(this);
         this.setText = this.setText.bind(this);
         this.onOff = this.onOff.bind(this);
+        this.tagAssign = this.tagAssign.bind(this);
+        this.mydebug = this.mydebug.bind(this);
     }
 
+    /*function mydebug(name){
+        if(this.state.active === 'T'){console.log(name);}
+    }*/
+    mydebug(name){
+        if(this.state.active === 'T'){console.log(name);}
+    }
     downloadNoteFile = () => {
         const x = document.createElement("a");
         const file = new Blob([this.state.theNote], {type: 'text/plain'});
@@ -55,27 +63,22 @@ export class MainTextComponent extends Component{
         let name = target.name;
 
         let check = value.charAt(value.length - 1);
-        let tempTag = this.state.saveTag;
-        let tagIndicater = this.state.tagTrigger;
-        if(check === '*' || check === '-'){
-            tagIndicater += check;
+        let wordCheck = this.state.wordCheck;
+        let tagList = this.state.globalTagList;
+        if(check !== ' ' && target.type !=='text'){
+            wordCheck += check;
             this.setState({
-                tagTrigger: tagIndicater
+                wordCheck: wordCheck
             });
-        }else if(tagIndicater === '*-' && check !== ' '){
-            tempTag += check;
+        }else if(check === ' ' && wordCheck.length > 0){
+            tagList.forEach((a) =>{
+                if(a == wordCheck){
+                    value = this.tagAssign();
+                }
+            });
             this.setState({
-                saveTag: tempTag
+                wordCheck: ''
             });
-        }else if(tagIndicater === '*-' && check === ' '){
-            let temp = this.state.tagList;
-            temp.push(tempTag);
-            this.setState({
-                tagList: temp,
-                tagTrigger: '',
-                saveTag: ''
-            });
-            console.log(this.state.tagList);
         }
         this.setState({
             [name]: value
@@ -83,7 +86,7 @@ export class MainTextComponent extends Component{
     }
 
     handleDisplayText(){
-        console.log("handleDisplayText");
+        this.mydebug("handleDisplayText");
         let temp = '';
         let count = 0;
         this.state.sectionList.forEach((e)=>{
@@ -94,7 +97,6 @@ export class MainTextComponent extends Component{
             count ++;       
         });
         let test = this.state.title + "\n" + this.state.author + "\n" + this.state.description + "\n" + temp;
-        console.log()
         test = test.replace(/[*-]/g, '');
         this.setState({
             theNote: test
@@ -102,15 +104,14 @@ export class MainTextComponent extends Component{
     }
 
     myRefresh(){
-        console.log("myRefresh");
+        this.mydebug("myRefresh");
             this.setState({
                 mainText: ''
             });
-            console.log(this.state);
     }
 
     addSection(){
-        console.log("addSection");
+        this.mydebug('addSection');
         var templateList = this.state.sectionName.split(";");
         templateList.forEach((name)=> {
             let hv = this.state.sectionList.length > 0 ? true : false;
@@ -132,7 +133,7 @@ export class MainTextComponent extends Component{
         });
     }
     removeSection(key){
-        console.log("removeSection");
+        this.mydebug("removeSection");
         let temp = this.state.sectionList;
         temp.splice(getIndexOfObject(key, temp, "section"),1);
         this.setState({
@@ -141,7 +142,7 @@ export class MainTextComponent extends Component{
     }
 
     edit(id, sectionid){
-        console.log("edit");
+        this.mydebug("edit");
         let tempData = this.state.sectionList.findIndex(function (e){
             return e.section === sectionid ? e : -1;
         });
@@ -155,8 +156,8 @@ export class MainTextComponent extends Component{
         })
     }
 
-    testing(event){
-        console.log("testing");
+    selectNote(event){
+        this.mydebug("selectNote");
         let dataIndex = event.target.id - 1;
         let selectedTemp = {};
         selectedTemp =  this.state.sectionList[dataIndex];
@@ -168,21 +169,32 @@ export class MainTextComponent extends Component{
     }
 
     testAdd(event){
-        console.log("testAdd");
-        console.log(this.state.tagList);
+        this.mydebug("testAdd");
+        let globaltaglist = this.state.globalTagList;
         let dataIndex = event.target.id - 1;
-        if(this.state.mainText.trim() !== ''){
+        if(this.state.mainText != undefined && this.state.mainText.trim() !== ''){
             let d = new Date();
             let tempId = this.state.sectionList[dataIndex].texts.length;
             let tempArray = [];
             tempArray = this.state.sectionList;
-            let tempTagString = '';
-            this.state.tagList.forEach((a) =>{
-                tempTagString += a + ', '; 
-            });
             let tempText = this.state.mainText;
+            let reg = /(\*\-[^\s]+)/g;
+            let tempTagString = '';
+            let tempTagList = [];
+            let tempTagArray = [...tempText.matchAll(reg)];
+            tempTagArray.forEach((a) =>{
+               let tempString = a['0'];
+               tempString = tempString.replace(/[*-]/g,'');
+               tempTagString += tempString + ', ';
+               tempTagList.push(tempString);
+               globaltaglist.push(tempString);
+            });
+            let temp = new Set();
+            globaltaglist.forEach((c) =>{
+                temp.add(c);
+            });
+            globaltaglist = [...temp];
             tempText = tempText.replace(/[*-]/g,'');
-            let tempTagList = this.state.tagList;
             let tempObject = {
                 id: tempId,
                 text: tempText + "\n",
@@ -195,21 +207,20 @@ export class MainTextComponent extends Component{
             this.setState({
                 sectionList: tempArray,
                 selectedNote: tempArray[dataIndex],
-                tagList: []
+                globalTagList: globaltaglist
             });
-        }
+            
         this.setText(dataIndex);
         this.handleDisplayText();
         this.myRefresh();
+        }
         
         
     }
 
     onOff(event){
-        console.log("onOff");
+        this.mydebug("onOff");
         if(event != undefined){
-            //let id= 0;
-
              let id = event.target.id;
              let temp = this.state.selectedNote;
              temp.texts.forEach((a)=>{
@@ -234,13 +245,6 @@ export class MainTextComponent extends Component{
         }
         
     }
-    /*
-
-                <td id={e.id}><div id={e.id}>{e.visible == 'visible' ? '-':'+'}</div><div id={e.id}> {e.time} - {e.text.slice(0,40)}</div></td>
-            <tr className="noteSectionBackground" >
-                <td className="tagFormat">{e.tagString}</td>
-            </tr>
-    */
     setText(id){
         let textList = this.state.sectionList[id].texts.map((e)=> 
         <table>
@@ -253,13 +257,35 @@ export class MainTextComponent extends Component{
             </tr>
         </table>        
         ) ;
-         console.log(textList);
          this.setState({
               selectedDisplayText: textList
           });
     }
-    onTagChange(event){
-        console.log(event);
+    tagAssign(){
+        this.mydebug('tagAssign');
+        let textarea = document.getElementById("awesometextarea");
+        let formatted = '';
+        let wordCheckStart = textarea.value.indexOf(this.state.wordCheck)
+        let wordCheckEnd= textarea.value.indexOf(this.state.wordCheck) + this.state.wordCheck.length;
+        let len = textarea.value.length;
+        let start = len === textarea.selectionStart ?  wordCheckStart : textarea.selectionStart ;
+        let end =  len === textarea.selectionStart  ? wordCheckEnd : textarea.selectionEnd;
+        let sel = textarea.value.substring( start, end);
+        let replace = '*-' + sel;
+
+        textarea.value = textarea.value.substring(0,start) + replace + textarea.value.substring(end,len);
+        formatted = textarea.value;
+
+        if(len === textarea.selectionStart ){
+            return formatted;
+        }else{
+            this.setState({
+                mainText: formatted
+            });
+        
+        }
+        
+    
     }
 
 
@@ -269,7 +295,7 @@ export class MainTextComponent extends Component{
             <div className="inline-box-align">
                 <button onClick={this.testAdd} id={e.section}>+</button>
             </div> 
-            <div className="inline-box-align" onClick={this.testing} id={e.section}>
+            <div className="inline-box-align" onClick={this.selectNote} id={e.section}>
                 {e.name}
             </div> 
             <div className="inline-box-align" id="entryNumber">
@@ -298,11 +324,11 @@ export class MainTextComponent extends Component{
                         <div className="TheAwesomeTextBoxChild" id="TheAwesomeTextBox">
                             <h2>The Awesome Text Box</h2>
                             <div>
-                                <textarea className='main-text' name="mainText" value={this.state.mainText} onChange={this.handleChange} rows="10" cols="50"/>
-                            </div>                           
+                                <textarea className='main-text' name="mainText" id="awesometextarea" value={this.state.mainText} onChange={this.handleChange} rows="10" cols="50"/>
+                            </div>                            
                             <div>
-                                <button onClick={this.myRefresh}>Clear</button>
-                            </div>                   
+                                <button onClick={this.tagAssign}>Tag</button>
+                            </div>                 
                         </div>
                         <div className="TheAwesomeTextBoxChild" id="NoteSectionList">
                             <div>
@@ -336,4 +362,3 @@ export class MainTextComponent extends Component{
     }
 
 }
-
