@@ -1,8 +1,8 @@
 .text-note{
     border-radius: 8px;
     border: 1px solid #4d5d53;
-    width: 400px;
-    height:400px;
+    /*width: 400px;
+    height:400px;*/
     overflow: auto;
     padding-bottom: 0px;
     box-shadow: 8px 10px 5px #4d5d53;
