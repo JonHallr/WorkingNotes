@@ -40,9 +40,6 @@ export class MainTextComponent extends Component{
         this.mydebug = this.mydebug.bind(this);
     }
 
-    /*function mydebug(name){
-        if(this.state.active === 'T'){console.log(name);}
-    }*/
     mydebug(name){
         if(this.state.active === 'T'){console.log(name);}
     }
