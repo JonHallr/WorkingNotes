@@ -8,7 +8,7 @@ export class MainTextComponent extends Component{
     constructor(props){
         super(props);
         this.stateChange = props.stateChange || new Function();
-        
+
         this.state ={
             active: 'F',
             sectionName:'',
@@ -24,7 +24,22 @@ export class MainTextComponent extends Component{
             wordCheck : '',
             tagTrigger : ''
         };
-
+         /*       
+        this.state ={  
+            active: this.props.noteMain.active,
+            sectionName:this.props.noteMain.sectionName,
+            mainText: this.props.noteMain.mainText,
+            theNote: this.props.noteMain.theNote,
+            title: this.props.noteMain.title,
+            author:this.props.noteMain.author,
+            description:this.props.noteMain.description,
+            selectedNote: this.props.noteMain.selectedNote,
+            selectedDisplayText: '',
+            sectionList: this.props.noteMain.sectionList,
+            globalTagList:this.props.noteMain.globalTagList,
+            wordCheck : '',
+            tagTrigger : ''}
+*/
         this.handleChange = this.handleChange.bind(this);
         this.myRefresh = this.myRefresh.bind(this);
         this.handleDisplayText = this.handleDisplayText.bind(this);
@@ -38,6 +53,8 @@ export class MainTextComponent extends Component{
         this.onOff = this.onOff.bind(this);
         this.tagAssign = this.tagAssign.bind(this);
         this.mydebug = this.mydebug.bind(this);
+
+        this.passBack = this.passBack.bind(this);
     }
 
     mydebug(name){
@@ -281,8 +298,44 @@ export class MainTextComponent extends Component{
             });
         
         }
-        
     
+    }
+
+    passBack(){
+        
+        this.props.lifeLine();
+        /*
+        let temp = JSON.stringify(this.state);
+        console.log(temp);
+        temp = temp.replace('\n','\\n');
+        */
+       
+       //let obj = JSON.parse(temp);
+        //console.log(obj);
+
+        console.log(this.props.noteMain);
+        if(Object.entries(this.props.noteMain).length > 0){
+            this.setState({
+                active: this.props.noteMain.active,
+                sectionName:this.props.noteMain.sectionName,
+                mainText: this.props.noteMain.mainText,
+                theNote: this.props.noteMain.theNote,
+                title: this.props.noteMain.title,
+                author:this.props.noteMain.author,
+                description:this.props.noteMain.description,
+                selectedNote: this.props.noteMain.selectedNote,
+               sectionList: this.props.noteMain.sectionList,
+                globalTagList:this.props.noteMain.globalTagList,
+                wordCheck : '',
+                tagTrigger : ''
+    
+            });
+        }
+        
+
+        console.log(this.state);
+       
+        
     }
 
 
@@ -325,7 +378,10 @@ export class MainTextComponent extends Component{
                             </div>                            
                             <div>
                                 <button onClick={this.tagAssign}>Tag</button>
-                            </div>                 
+                            </div>                               
+                            <div>
+                                <button onClick={this.passBack}>Load</button>
+                            </div>              
                         </div>
                         <div className="TheAwesomeTextBoxChild" id="NoteSectionList">
                             <div>

@@ -1,13 +1,15 @@
 import React from 'react';
 import './App.css';
-import {MainTextComponent} from './components/mainText/MainTextComponent'
+import {HubComponent} from './components/mainText/hub.component'
+
 
 function App() {
+  
   return (
     <div className="App">
       <div className="App-top">
         <div>
-          <MainTextComponent />
+          <HubComponent />
         </div>
       </div>
     </div>
