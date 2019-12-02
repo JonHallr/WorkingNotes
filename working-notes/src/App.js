@@ -1,6 +1,6 @@
 import React from 'react';
 import './App.css';
-import {HubComponent} from './components/mainText/hub.component'
+import {AwesomeHubComponent} from './components/awesome-hub.component'
 
 
 function App() {
@@ -9,7 +9,7 @@ function App() {
     <div className="App">
       <div className="App-top">
         <div>
-          <HubComponent />
+          <AwesomeHubComponent />
         </div>
       </div>
     </div>
