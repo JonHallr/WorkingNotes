@@ -1,0 +1,23 @@
+
+.wrapper {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-gap: 10px;
+    grid-auto-rows: minmax(100px, auto);
+    background: white;
+    padding:10px 10px 0px 10px;
+  }
+  .notelist {
+    grid-row: 1;
+    grid-column: 2;
+  }
+  .export {
+    grid-row: 1;
+    grid-column: 3;
+
+  }
+  .upload {
+    grid-row: 1;
+    grid-column: 1;
+
+  }

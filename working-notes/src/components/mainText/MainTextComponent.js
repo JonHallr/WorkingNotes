@@ -8,7 +8,7 @@ export class MainTextComponent extends Component{
     constructor(props){
         super(props);
         this.stateChange = props.stateChange || new Function();
-        
+
         this.state ={
             active: 'F',
             sectionName:'',
@@ -25,6 +25,24 @@ export class MainTextComponent extends Component{
             tagTrigger : ''
         };
 
+/*
+this.state ={
+    active: this.props.noteMain != undefined ? this.props.noteMain.active : 'F',
+    sectionName:this.props.noteMain != undefined ?this.props.noteMain.sectionName : '',
+    mainText: this.props.noteMain != undefined ?this.props.noteMain.mainText : '',
+    theNote: this.props.noteMain != undefined ?this.props.noteMain.theNote : '',
+    title:this.props.noteMain != undefined ? this.props.noteMain.title : '',
+    author:this.props.noteMain != undefined ?this.props.noteMain.author : '',
+    description:this.props.noteMain != undefined ?this.props.noteMain.description : '',
+    selectedNote: this.props.noteMain != undefined ? this.props.noteMain.selectedNote : {},
+    selectedDisplayText: '',
+    sectionList: this.props.noteMain != undefined ? this.props.noteMain.sectionList : [],
+    globalTagList:this.props.noteMain != undefined ?this.props.noteMain.globalTagList : [],
+    wordCheck : '',
+    tagTrigger : ''
+
+};
+*/  
         this.handleChange = this.handleChange.bind(this);
         this.myRefresh = this.myRefresh.bind(this);
         this.handleDisplayText = this.handleDisplayText.bind(this);
@@ -38,6 +56,8 @@ export class MainTextComponent extends Component{
         this.onOff = this.onOff.bind(this);
         this.tagAssign = this.tagAssign.bind(this);
         this.mydebug = this.mydebug.bind(this);
+
+        this.passBack = this.passBack.bind(this);
     }
 
     mydebug(name){
@@ -281,13 +301,40 @@ export class MainTextComponent extends Component{
             });
         
         }
-        
     
+    }
+
+    async passBack(){
+        
+        //await this.props.lifeLine();
+
+        console.log(this.props.noteMain);
+        if(Object.entries(this.props.noteMain).length > 0){
+            this.setState({
+                active: this.props.noteMain.active,
+                sectionName:this.props.noteMain.sectionName,
+                mainText: this.props.noteMain.mainText,
+                theNote: this.props.noteMain.theNote,
+                title: this.props.noteMain.title,
+                author:this.props.noteMain.author,
+                description:this.props.noteMain.description,
+                selectedNote: this.props.noteMain.selectedNote,
+               sectionList: this.props.noteMain.sectionList,
+                globalTagList:this.props.noteMain.globalTagList,
+                wordCheck : '',
+                tagTrigger : ''
+    
+            });
+        }
+                console.log(this.state);
+       
+        
     }
 
 
     render(){
-        let noteSelection = this.state.sectionList.map((e)=>
+        if(this.state.sectionList != undefined && this.state.sectionList.length > 0){
+            var noteSelection = this.state.sectionList.map((e)=>
         <li className="leftAlign">
             <div className="inline-box-align">
                 <button onClick={this.testAdd} id={e.section}>+</button>
@@ -300,6 +347,8 @@ export class MainTextComponent extends Component{
             </div>          
         </li>
         );
+        }
+        
      
 
         return ( 
@@ -325,7 +374,7 @@ export class MainTextComponent extends Component{
                             </div>                            
                             <div>
                                 <button onClick={this.tagAssign}>Tag</button>
-                            </div>                 
+                            </div>             
                         </div>
                         <div className="TheAwesomeTextBoxChild" id="NoteSectionList">
                             <div>
@@ -350,7 +399,6 @@ export class MainTextComponent extends Component{
                     </div> 
                 </div>
                 <div className="TheNote">
-                    <div><button onClick={this.downloadNoteFile}>Export</button></div>
                     <textarea value={this.state.theNote} readOnly/>
                 </div>
             </div>
@@ -359,3 +407,8 @@ export class MainTextComponent extends Component{
     }
 
 }
+
+/*
+
+                    <div><button onClick={this.downloadNoteFile}>Export</button></div>
+*/
