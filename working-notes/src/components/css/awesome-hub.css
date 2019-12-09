@@ -1,4 +1,4 @@
-/*
+d /*
 lightest to darkest
 #8f9779
 #78866b
@@ -27,7 +27,7 @@ lightest to darkest
     grid-column: 2;
   }
   */
-  .hub .export {
+  .hub .notelist {
     grid-row: 1;
     grid-column: 1;
 
@@ -175,10 +175,17 @@ lightest to darkest
   }
   .noteSectionBackground td{
     background-color:#4d5d53;
-    padding: 5px 5px; 
-    padding-bottom: 15px;  
+    padding-bottom: 10px;  
     width:95%;
+    vertical-align: center;
 
+  }
+  .noteSectionEdit button{
+    padding: 5px 50px;
+    margin: 0px;
+  }
+  .noteSectionEdit{
+    line-height: 1px;
   }
   table{
     width:100%;
