@@ -7,11 +7,7 @@ function App() {
   
   return (
     <div className="App">
-      <div className="App-top">
-        <div>
           <AwesomeHubComponent />
-        </div>
-      </div>
     </div>
   );
 }

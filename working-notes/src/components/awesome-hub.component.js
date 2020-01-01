@@ -1,9 +1,11 @@
-import React, {Component} from 'react';
+import React,  {Component} from 'react';
+import * as CryptoJS from 'crypto-js';
 import './css/awesome-hub.css';
 //import {TextNoteComponent} from '../notes/TextNoteComponent';
 import {getIndexOfObject} from './shared/util';
 import {ClockComponent} from './shared/clock.component';
 
+const autosave = 0;
 export class AwesomeHubComponent extends Component{
 
     constructor(props){
@@ -17,52 +19,76 @@ export class AwesomeHubComponent extends Component{
             selected:false,
             PageListDD:[], //dropdown list for selecting your note
             upload: '',
+            //notebook
+            selectedNotebook: {},
+            selectedNotebookValue: 0,
             //Note Section
             ID: 0,
             active: 'T',
-            sectionName:'',
             mainText: '',
-            theNote: '',
+            originalTitle: '',
             title: '',
-            author:'',
-            description:'',
-            selectedDisplayText: '',
-            selectedNote: {}, //selected section of the note
+            //Page
+            pageName:'', // new page name value
+            selectedPage: {}, //selected section of the note
             PageList: [], // selected Note section list
             DeletedPageList:[],
+            selectPageValue: 0,
+            //Note Section
+            selectedNote: {},
+            selectNoteValue: 0,
+            selectedDisplayText: '',
+            //Tag
             globalTagList:[], // global tag for the selected Note
             //util values
+            yours:'',
+            isEncrypt: false,
+            isUploaded:false,
+            isNew:false,
             wordCheck : '',
-            tagTrigger : ''
+            tagTrigger : '',
+            autoSave:0,
+            //the note
+            theNote: '',
+            testDisplay:''
         }; 
 
 
         //Hub Section
-        this.saveLoad = this.saveLoad.bind(this);
+        this.load = this.load.bind(this);
         this.setSelected = this.setSelected.bind(this);
         this.upload = this.upload.bind(this);
         //Note Section
         this.handleChange = this.handleChange.bind(this);
         this.myRefresh = this.myRefresh.bind(this);
         //this.handleDisplayText = this.handleDisplayText.bind(this);
-        this.addSection = this.addSection.bind(this);
+        this.addPage = this.addPage.bind(this);
 
-        this.selectNote = this.selectNote.bind(this);
-        this.testAdd = this.testAdd.bind(this);
+        this.selectPage = this.selectPage.bind(this);
+        this.addNote = this.addNote.bind(this);
         this.setText = this.setText.bind(this);
         this.onOff = this.onOff.bind(this);
         this.tagAssign = this.tagAssign.bind(this);
         this.mydebug = this.mydebug.bind(this);
 
-        this.newNote = this.newNote.bind(this);
+        this.addNotebook = this.addNotebook.bind(this);
 
         this.onClickEdit = this.onClickEdit.bind(this);
         this.handleNoteSectionEditChange = this.handleNoteSectionEditChange.bind(this);
 
         this.NoteTextDelete = this.NoteTextDelete.bind(this);
         this.PageDelete = this.PageDelete.bind(this);
-        this.NotebookDelete = this.NotebookDelete.bind(this);
-    }
+        this.DeleteNotebook = this.DeleteNotebook.bind(this);
+
+        this.test = this.test.bind(this);
+
+        this.selectNote = this.selectNote.bind(this)
+
+        this.selectNotebook = this.selectNotebook.bind(this);
+
+        this.save = this.save.bind(this);
+
+;    }
 
     mydebug(name){
         if(this.state.active === 'T'){console.log(name);}
@@ -72,38 +98,40 @@ export class AwesomeHubComponent extends Component{
 downloadNoteFile = () => {
     const x = document.createElement("a");
     let temp = JSON.stringify(this.state.Notebooks);
-    console.log(temp);
-    const file = new Blob([temp], {type: 'application/json'});
+    var crazy;
+    if(this.state.isEncrypt && this.state.yours.length > 0){
+        let key = this.state.yours;
+        crazy = CryptoJS.AES.encrypt(temp,key);
+    }
+
+    const file = new Blob([this.state.isEncrypt ? crazy : temp], {type: 'application/json'});
+    //const file = new Blob([temp], {type: 'application/json'});
     x.href = URL.createObjectURL(file);
     x.download = "MyAwesomeNote.json";
     document.body.appendChild(x); // Required for this to work in FireFox
     x.click();
   }
 
-  newNote(){      
-    this.mydebug('newNote');
+  addNotebook(){      
+    this.mydebug('addNotebook');
+    /*
     let check = false; 
-    console.log(this.state.Notebooks);
     this.state.Notebooks.forEach((a)=>{
         if(a != undefined && a.title === this.state.title){
             check = true;
         }
     });
-    console.log(!check);
-    console.log(this.state.title !== '');
     if(!check){
-        console.log('made it here')
+        */
         let tempList = this.state.Notebooks.length > 0 ? this.state.Notebooks : [];
         let tempID = this.state.Notebooks.length > 0 ? this.state.Notebooks.length : 0;
         let singleObj = new Object({
         ID: tempID,
-        sectionName:'',
+        pageName:'',
         mainText: '',
         theNote: '',
-        title: this.state.title,
-        author:'',
-        description:'',
-        selectedNote: {},
+        title: 'New Notebook',
+        selectedPage: {},
         PageList: [],
         selectedDisplayText: '',
         globalTagList: [],
@@ -111,112 +139,106 @@ downloadNoteFile = () => {
         tagTrigger :''
          });
          tempList.push(singleObj);
-        console.log(tempList);
-    
        let tempPageList = this.dropDownListCreator(tempList);
         this.setState({
             Notebooks: tempList,
+            selectedNotebook: singleObj,
+            selectedNotebookValue:tempID,
             PageListDD: tempPageList,
             ID: singleObj.ID,
-            sectionName:singleObj.sectionName,
+            pageName:singleObj.pageName,
             mainText: singleObj.mainText,
             theNote: singleObj.theNote,
-            title: this.state.title,
-            author:singleObj.author,
-            description:singleObj.description,
-            selectedNote: singleObj.selectedNote,
+            originalTitle: this.state.title,
+            title: singleObj.title,
+            selectedPage: singleObj.selectedPage,
             PageList: singleObj.PageList,
             selectedDisplayText: singleObj.selectedDisplayText,
             globalTagList: singleObj.globalTagList,
             wordCheck :singleObj.wordCheck,
-            tagTrigger :singleObj.tagTrigger
+            tagTrigger :singleObj.tagTrigger,
+            isNew: true
             });
 
     }
-  }
-
-  async saveLoad(){
-    this.mydebug('saveLoad');
-    let selectedListItem = document.getElementById("PageListDD");
-        let selectedItem = this.state.Notebooks[selectedListItem.value];
-        console.log(selectedListItem.value);
-        console.log(selectedItem);
-
-
-        console.log(selectedListItem.name)
-        if(this.state.Notebooks.length > 0 || this.state.title !== ''){
-            console.log('Step: 1');
-            console.log(this.state.title);
-            console.log(selectedItem.title);
-             if(this.state.title === selectedItem.title){
-                    console.log('Step: 2');
-                let xlist = this.state.Notebooks;
-                    console.log(selectedItem.title)
-                    xlist.splice(selectedListItem.value,1,{
-                    ID: this.state.ID,
-                    sectionName:this.state.sectionName,
-                    mainText: this.state.mainText,
-                    theNote: this.state.theNote,
-                    title: this.state.title,
-                    author:this.state.author,
-                    description:this.state.description,
-                    selectedNote: this.state.selectedNote,
-                    PageList: this.state.PageList,
-                    globalTagList:this.state.globalTagList,
-                    wordCheck : this.state.wordCheck,
-                    tagTrigger : this.state.tagTrigger
-                });
-                let templist = this.dropDownListCreator(xlist);
-                await this.setState({
-                    Notebooks:xlist,
-                    PageListDD: templist
-                });
-                console.log("The Same");
-            }else if(selectedItem != undefined){
-                console.log('Step: 5');
-                console.log(selectedItem);
-                //Load
-                await this.setState({
-                    ID: selectedItem.ID,
-                    sectionName:selectedItem.sectionName,
-                    mainText: selectedItem.mainText,
-                    theNote: selectedItem.theNote,
-                    title: selectedItem.title,
-                    author:selectedItem.author,
-                    description:selectedItem.description,
-                    selectedNote: selectedItem.selectedNote,
-                    PageList: selectedItem.PageList,
-                    selectedDisplayText: '',
-                    globalTagList:selectedItem.globalTagList,
-                    wordCheck : '',
-                    tagTrigger : '',
-                    selected: true
-        
-                });
-            }
-            
-
+ // }
+ /*componentDidMount(){
+     console.log('componentDidMount')
+    setInterval(this.save,1000);
+ }*/
+  async save(){
+      this.mydebug('save');
+        let selectedListItem = document.getElementById("PageListDD");
+        if(selectedListItem){
+                await this.globalTagAssign();
+               let xlist = this.state.Notebooks;
+                   xlist.splice(selectedListItem.value,1,{
+                   ID: this.state.selectedNotebook.ID,
+                   pageName:this.state.selectedNotebook.pageName,
+                   mainText: this.state.selectedNotebook.mainText,
+                   theNote: this.state.selectedNotebook.theNote,
+                   title: this.state.selectedNotebook.title,
+                   selectedPage: this.state.selectedNotebook.selectedPage,
+                   PageList: this.state.selectedNotebook.PageList,
+                   globalTagList:this.state.selectedNotebook.globalTagList,
+                   wordCheck : this.state.selectedNotebook.wordCheck,
+                   tagTrigger : this.state.selectedNotebook.tagTrigger,
+                   selectPageValue: this.state.selectedNotebook.selectPageValue,
+                   selectedNote: this.state.selectedNotebook.selectedNote,
+                   selectNoteValue: this.state.selectedNotebook.selectNoteValue,
+                   selectedNotebook: this.state.selectedNotebook,
+                   selectedNotebookValue: this.stateselectedNotebookValue
+               });
+               let templist = this.dropDownListCreator(xlist);
+               await this.setState({
+                   Notebooks:xlist,
+                   PageListDD: templist,
+               });
         }else{
-            console.log('Enter something');
+            console.log('no');
         }
-        
+        console.log(this.state);
+
+  }
+  async load(){
+    this.mydebug('load');
+    let selectedListItem = document.getElementById("PageListDD");
+    if(selectedListItem){
+        let selectedItem = this.state.Notebooks[selectedListItem.value];
+        //Load
+        await this.setState({
+            ID: selectedItem.ID,
+            pageName:selectedItem.pageName,
+            mainText: selectedItem.mainText,
+            theNote: selectedItem.theNote,
+            originalTitle: selectedItem.title,
+            title: selectedItem.title,
+            selectedPage: selectedItem.selectedPage,
+            PageList: selectedItem.PageList,
+            selectedDisplayText: '',
+            globalTagList:selectedItem.globalTagList,
+            wordCheck : '',
+            tagTrigger : '',
+            selected: true,         
+            selectPageValue: selectedItem.selectPageValue,
+            selectedNote: selectedItem.selectedNote,
+            selectNoteValue: selectedItem.selectNoteValue
+
+        });
+    };
        
 }
-setSelected(event){
+async setSelected(event){
     this.mydebug("setSelected");
     let target = event.target;
     
-    if(target != undefined){
-
-        console.log(this.state.Notebooks);
-        console.log(this.state.Notebooks[target.value]);
-        console.log(this.state.Notebooks[target.value].title);
+    if(target != undefined && this.state.Notebooks.length > 0){
         let value = this.state.title === this.state.Notebooks[target.value].title ? true : false;
         this.setState({
             selected: value
         });
     }
-    console.log(target.value);
+    await this.load();
 }
 
 readFileAsync(file){
@@ -237,25 +259,29 @@ async upload(){
         let doc = document.getElementById('upload');
         var file = doc.files.item(0);
         let contentBuffer = await this.readFileAsync(file);
-        let temp = JSON.parse(contentBuffer);
-        console.log(temp);
+        var temp;
+    if(this.state.isEncrypt){
+        let key = this.state.yours;
+        let back = CryptoJS.AES.decrypt(contentBuffer, key);
+        temp = JSON.parse(back.toString(CryptoJS.enc.Utf8));
+    }else{
+        temp = JSON.parse(contentBuffer);
+
+    }   
         let templist = this.dropDownListCreator(temp) ;
         this.setState({
             Notebooks: temp,
-            PageListDD: templist
+            PageListDD: templist,
+            isUploaded:true
         })
-        console.log(temp);
-        console.log(contentBuffer);
     }catch(err){
         console.log(err);
 
     }
-    console.log(this.state.Notebooks);
-
-
 }
+
 dropDownListCreator(temp){
-    console.log('dropDownListCreator');
+    this.mydebug('dropDownListCreator');
     let templist = [];
     let count = 0;
     temp.forEach((a) =>{
@@ -269,7 +295,6 @@ dropDownListCreator(temp){
         }
         
     });
-    console.log(templist);
     return templist;
 }
 //Note Section
@@ -281,48 +306,18 @@ dropDownListCreator(temp){
         let target = event.target;
         let value = target.value;
         let name = target.name;
-
-        let check = value.charAt(value.length - 1);
-        let wordCheck = this.state.wordCheck;
-        let tagList = this.state.globalTagList;
-        if(check !== ' ' && target.type !=='text'){
-            wordCheck += check;
-            this.setState({
-                wordCheck: wordCheck
-            });
-        }else if(check === ' ' && wordCheck.length > 0){
-            tagList.forEach((a) =>{
-                if(a == wordCheck){
-                    value = this.tagAssign();
-                }
-            });
-            this.setState({
-                wordCheck: ''
-            });
+        let temp = {};
+        temp = this.state.selectedNotebook;
+        temp[name] = value;
+        console.log(value);
+        console.log(name);
+        this.setState({
+            selectedNotebook: temp
+        });
+        if(name === 'title'){
+            this.save();
         }
-        this.setState({
-            [name]: value
-        });
     }
-    /*
-    handleDisplayText(){
-        this.mydebug("handleDisplayText");
-        let temp = '';
-        let count = 0;
-        this.state.PageList.forEach((e)=>{
-            temp = count > 0 ? temp + "\n" + e.name: e.name + "\n" 
-            e.texts.forEach((a)=>{
-                temp = temp + "\n" +  (a.time + "\n" + a.text );                
-            });
-            count ++;       
-        });
-        let test = this.state.title + "\n" + this.state.author + "\n" + this.state.description + "\n" + temp;
-        test = test.replace(/[*-]/g, '');
-        this.setState({
-            theNote: test
-        });
-    }
-*/
 handleDisplayNote(section){
     this.mydebug("handleDisplayNote");
     let temp = '';
@@ -331,15 +326,6 @@ handleDisplayNote(section){
     section.texts.forEach((a)=>{
         temp = temp + "\n" +  (a.time + "\n" + a.text ); 
     });
-    /*
-    this.state.PageList.forEach((e)=>{
-        temp = count > 0 ? temp + "\n" + e.name: e.name + "\n" 
-        e.texts.forEach((a)=>{
-            temp = temp + "\n" +  (a.time + "\n" + a.text );                
-        });
-        count ++;       
-    });
-    */
     let test = section.name + "\n" + temp;
     test = test.replace(/(\*\-)/g, '');
     return test;
@@ -351,13 +337,13 @@ handleDisplayNote(section){
             });
     }
 
-    addSection(){
-        this.mydebug('addSection');
-        var templateList = this.state.sectionName.split(";");
+    addPage(){
+        this.mydebug('addPage');
+        var templateList = this.state.selectedNotebook.pageName.split(";");
         templateList.forEach((name)=> {
-            let hv = this.state.PageList.length > 0 ? true : false;
-            let temp = this.state.PageList;
-            let os = hv ? temp[temp.length - 1] : 0;
+            let hv = this.state.selectedNotebook.PageList.length > 0 ? true : false;
+            let temp = this.state.selectedNotebook;
+            let os = hv ? temp.PageList[temp.PageList.length - 1] : 0;
             let ns = hv ? os.section + 1 : os + 1;
             let tempObj ={
                 name: name,
@@ -366,55 +352,119 @@ handleDisplayNote(section){
                 deletedTexts: [],
                 note:''
             }
-            temp.push(tempObj);
+            temp.pageName = '';
+            temp.selectedPage = tempObj;
+            temp.selectedPageValue = ns;
+            temp.selectedNote = {};
+            temp.PageList.push(tempObj);
+            console.log(temp);
             this.setState({            
-                sectionName:'',
-                PageList: temp,
-                selectedNote: tempObj,
-                selectedDisplayText: ''
+                /*pageName:'',
+                PageList: temp.PageList,
+                selectedPage: tempObj,
+                selectedDisplayText: '',
+                selectPageValue: ns,
+                selectedNote: {},*/
+                selectedNotebook: temp,
             });
+            this.save();
+            //console.log(ns);
+           // this.setText(ns-1);
+            //document.getElementById("selectPage").selectedIndex = ns > 0 ? ns - 1: ns ;
         });
     }
-    /*
-    removeSection(key){
-        this.mydebug("removeSection");
-        let temp = this.state.PageList;
-        temp.splice(getIndexOfObject(key, temp, "section"),1);
+    selectNotebook(){
+        this.mydebug("selectNotebook");
+        let tempSelected = document.getElementById("PageListDD");
+        let id = Number(tempSelected.options[tempSelected.selectedIndex].value);
+        let selectedTempNotebook = {};
+        selectedTempNotebook =  this.state.Notebooks[id];
         this.setState({
-            PageList: temp
+            selectedNotebook: selectedTempNotebook,
+            selectedNotebookValue: id
         });
+        this.load();
+        //this.setText(dataIndex);
     }
-    
-    edit(id, sectionid){
-        this.mydebug("edit");
-        let tempData = this.state.PageList.findIndex(function (e){
-            return e.section === sectionid ? e : -1;
-        });
-        let temp = this.state.PageList[tempData].texts;
-        temp.forEach((e)=>{
-            if(e.id === id){
-                this.setState({
-                    mainText: e.text
-                });
-            }
-        })
-    }
-    */
-    //update the selected note
-    selectNote(event){
-        this.mydebug("selectNote");
-        let dataIndex = event.target.id - 1;
+    //update the selected page
+    selectPage(){
+        this.mydebug("selectPage");
+        let tempSelected = document.getElementById("selectPage");
+        let id = Number(tempSelected.options[tempSelected.selectedIndex].value);
+        let dataIndex = id - 1;
         let selectedTemp = {};
-        selectedTemp =  this.state.PageList[dataIndex];
+        console.log(id);
+        let tempNotebook = this.state.selectedNotebook;
+        tempNotebook.selectedPage =  tempNotebook.PageList[dataIndex];
+        tempNotebook.selectedPageValue = id;
         this.setState({
-            selectedNote: selectedTemp
+            selectedNotebook: tempNotebook,
         });
-        console.log(this.state.selectedNote);
-        this.setText(dataIndex);
+        //this.setText(dataIndex);
+    }
+    //update the selected note
+    selectNote(){
+        this.mydebug("selectNote");
+        let tempSelected = document.getElementById("selectNote");
+        let id = Number(tempSelected.options[tempSelected.selectedIndex].value);
+        let selectedTempNote = {};
+        selectedTempNote =  this.state.selectedPage.texts[id];
+        this.setState({
+            selectedNote: selectedTempNote,
+            selectNoteValue: id
+        });
+        //this.setText(dataIndex);
+    }
+    //Need to look into this more the results not good
+    globalTagAssign(){
+        let globalTemp =[...this.state.globalTagList];
+        let pageTemp = [...this.state.PageList];
+        //let globalListTemp = [];
+        let pageListTemp = [];
+            pageTemp.forEach((a)=>{
+                    let noteListTemp = [];
+                    a.texts.forEach((c)=>{
+                        let tempTag = c.tags;
+                        c.text.split(' ').forEach((d)=>{
+                            globalTemp.forEach((b)=>{
+                                if(d === b){
+                                    tempTag.push(b);
+                                }
+                            });
+                        });
+                        c.tags = tempTag;
+                        noteListTemp.push(c);
+                    });
+                a.texts = noteListTemp;
+                pageListTemp.push(a);
+            });
+        this.setState({
+                PageList: pageListTemp   
+        });
+    }
+
+    play(textPass){
+        let tempArray = [];
+        let temp = '';
+        for(let x = 0; x < textPass.length; x++){
+            let ascii = textPass.charCodeAt(x);
+            if(ascii === 10){
+                temp += '\n';
+            }else{
+                temp += textPass[x];            
+            }
+        }
+        tempArray.push(temp);
+        let making = tempArray.map((a)=>
+            <pre>{a}</pre>
+        );
+        this.setState({
+            testDisplay:  making
+        });
     }
     //add a note section.
-    testAdd(event){
-        this.mydebug("testAdd");
+    addNote(event){
+        this.mydebug("addNote");
 
         let globaltaglist = this.state.globalTagList;
         let dataIndex = event.target.id - 1;
@@ -424,28 +474,45 @@ handleDisplayNote(section){
             let tempArray = [];
             tempArray = this.state.PageList;
             let tempText = this.state.mainText;
+            //console.log(tempText);
+            this.play(tempText);
+            let tempTagList = [];
+            //global tag assign
+            globaltaglist.forEach((a)=>{
+                tempText.split(' ').forEach((b)=>{
+                    if(b === a){
+                        tempTagList.push(b);
+                    }
+                });
+            });
             let reg = /(\*\-[^\s]+)/g;
             let tempTagString = '';
-            let tempTagList = [];
             let tempTagArray = [...tempText.matchAll(reg)];
             tempTagArray.forEach((a) =>{
                let tempString = a['0'];
                tempString = tempString.replace(/(\*\-)/g,'');
-               tempTagString += tempString + ', ';
                tempTagList.push(tempString);
                globaltaglist.push(tempString);
             });
-            let temp = new Set();
+            let globalTemp = new Set();
+            let localTemp = new Set();
+            tempTagList.forEach((a)=>{localTemp.add(a)});
             globaltaglist.forEach((c) =>{
-                temp.add(c);
+                globalTemp.add(c);
             });
-            globaltaglist = [...temp];
-            tempText = tempText.replace(/(\*\-)/g,'');
+            globaltaglist = [...globalTemp];
+            tempTagList = [...localTemp];
+            tempTagList.forEach((a)=>{                
+               tempTagString += ' (' + a + ') ';
+            });
+            //global tag assign
             let tempObject = {
                 original_id: tempId,
+                original_text: tempText,
                 id: tempId,
-                text: tempText + "\n",
+                text: tempText.replace(/(\*\-)/g,'') + "\n",
                 time: d.getHours() + ":" + d.getMinutes() + ":" + d.getSeconds(),
+                date: d.getMonth() + '/' + d.getDay() + '/' + d.getFullYear(),
                 visible: 'collapse',
                 tags: tempTagList,
                 tagString: tempTagString 
@@ -455,11 +522,14 @@ handleDisplayNote(section){
             tempArray[dataIndex].note = this.handleDisplayNote(tempArray[dataIndex]);
             this.setState({
                 PageList: tempArray,
-                selectedNote: tempArray[dataIndex],
-                globalTagList: globaltaglist
+                selectedPage: tempArray[dataIndex],
+                globalTagList: globaltaglist,
+                selectedNote: tempObject,
+                selectNoteValue: tempId
             });
-            
-        this.setText(dataIndex);
+         
+        this.save();   
+        //this.setText(dataIndex);
         //this.handleDisplayText();
         this.myRefresh();
         }
@@ -471,7 +541,7 @@ handleDisplayNote(section){
         this.mydebug("onOff");
         if(event != undefined){
              let id = event.target.id;
-             let temp = this.state.selectedNote;
+             let temp = this.state.selectedPage;
              temp.texts.forEach((a)=>{
                  if(a.id == id){
                      switch(a.visible){
@@ -487,7 +557,7 @@ handleDisplayNote(section){
                  }
              });
              this.setState({
-                 selectedNote: temp
+                selectedPage: temp
              });
              this.setText(temp.section - 1);
              
@@ -496,6 +566,8 @@ handleDisplayNote(section){
     }
 
     setText(id){
+        /*
+        console.log(this.state.PageList[id]);
         let textList = this.state.PageList[id].texts.map((e)=> 
         <table key={e.id}>
             <tbody>
@@ -519,23 +591,23 @@ handleDisplayNote(section){
                 </tr>
                 <tr style={{visibility: e.visible}}>
                     <td className="textareaFormat"><textarea id={e.id + 'textarea'} value={e.text} rows="10" cols="100" onChange={this.handleNoteSectionEditChange} readOnly/></td>
-                    <td className="tagFormat">{e.tagString}</td>
+                    <td className="tagFormat">{e.tags.map((a)=>
+                        <div>
+                            {a}
+                        </div>
+                    )}</td>
                 </tr>
             </tbody>            
         </table>        
         ) ;
          this.setState({
               selectedDisplayText: textList
-          });
+          });*/
     }
-    NotebookDelete(e){
-        console.log('NotebookDelete')
-        console.log(this.state.Notebooks);
+    DeleteNotebook(e){
+        this.mydebug('DeleteNotebook')
         
-        //let target = e.target;
-        let index = this.state.ID ;// target.id - 1;
-        console.log(index);
-        //console.log(this.state.notebooks.length);
+        let index = this.state.ID ;
         let tempNotebookList =  this.state.Notebooks;
         let tempDNotebookList  = this.state.DeletedNotebooks;
         let deletedNotebook = tempNotebookList[index];
@@ -550,23 +622,22 @@ handleDisplayNote(section){
             DeletedNotebooks: tempDNotebookList,
             PageListDD: templist,
             ID: -1,
-            sectionName:'',
+            pageName:'',
             mainText: '',
             theNote: '',
             title: '',
-            author:'',
-            description:'',
-            selectedNote: {},
+            selectedPage: {},
             PageList: [],
             selectedDisplayText: '',
             globalTagList: [],
             wordCheck :'',
             tagTrigger :''
         });
+        this.save();
         
     }
     PageDelete(e){
-        console.log('PageDelete')
+        this.mydebug('PageDelete')
         let target = e.target;
         let index = target.id - 1;
         let tempPageList = new Array();
@@ -578,18 +649,23 @@ handleDisplayNote(section){
         for(let x = index; x < tempPageList.length;x++){
             tempPageList[x].section = x + 1;
         }
+        let newIndex = index < tempPageList.length ? index : tempPageList.length - 1 ;
         this.setState({
                 PageList: tempPageList,
-                DeletedPageList: tempDPageList
+                DeletedPageList: tempDPageList,
+                selectedPage: tempPageList[newIndex],
+                selectPageValue: index
         });
+        this.save();
+        //this.setText(newIndex)
     }
     NoteTextDelete(e){
         let target = e.target;
         let index = target.id;
-        let selectedIndex = Number(this.state.selectedNote.section) - 1;
+        let selectedIndex = Number(this.state.selectedPage.section) - 1;
         let tempList = this.state.PageList;
 
-        let tempSection = this.state.selectedNote;
+        let tempSection = this.state.selectedPage;
         let tempDelete = tempSection.texts[index];
         tempSection['deletedTexts'] == undefined ? tempSection['deletedTexts'] = [] : tempSection['deletedTexts'] = tempSection.deletedTexts;
         tempSection.deletedTexts.push(tempDelete);
@@ -600,9 +676,10 @@ handleDisplayNote(section){
         tempList[selectedIndex] = tempSection;
         this.setState({
                 PageList:tempList,
-                selectedNote: tempSection
+                selectedPage: tempSection
         });
-        this.setText(selectedIndex);
+        this.save();
+        //this.setText(selectedIndex);
     }
 
     onClickEdit(e){
@@ -650,126 +727,213 @@ handleDisplayNote(section){
         let value = target.value;
         let name = target.name;
         let textIndex = Number(target.id.replace('textarea',''));
-        let selectedIndex = Number(this.state.selectedNote.section) - 1;
+        let selectedIndex = Number(this.state.selectedPage.section) - 1;
         
-        let tempSelected = this.state.selectedNote;
+        let tempSelected = this.state.selectedPage;
         let tempList = this.state.PageList;
         tempSelected.texts[textIndex].text = value;
         tempList[selectedIndex] = tempSelected;
 
         this.setState({
             PageList: tempList,
-            selectedNote: tempSelected
+            selectedPage: tempSelected
         });
         this.setText(selectedIndex);
+    }
+    test(){
+        let value = !this.state.isEncrypt;
+        this.setState({
+            isEncrypt: value
+        });
     }
    
 
     render(){
+        let selected = this.state.selectedNotebook.selectedPage;
         //Hub Section
-        let NoteDropDownList =  this.state.PageListDD.map((a) =>
+        /*let notebookSelect =  this.state.PageListDD.map((a) =>
             <option key={a.position} value={a.position } >{a.name}</option>
-        );
-        //Note Section
-        var noteSelection = undefined;
-        if(this.state.PageList != undefined && this.state.PageList.length > 0){
-             noteSelection = this.state.PageList.map((e)=>
-        <li key={e.section} className="leftAlign">
-            <div className="inline-box-align">
-                <button onClick={this.PageDelete} id={e.section}>-</button>
-                <button onClick={this.testAdd} id={e.section}>+</button>
-            </div> 
-            <div className="inline-box-align" onClick={this.selectNote} id={e.section}>
-                {e.name}
-            </div> 
-            <div className="inline-box-align" id="entryNumber">
-                {e.texts.length}
-            </div>          
-        </li>
+        );*/
+        var notebookSelect = undefined;
+        if(this.state.Notebooks != undefined && this.state.Notebooks.length > 0){
+            notebookSelect = this.state.Notebooks.map((e)=>
+        <option key={e.ID} value={e.ID}>
+                {e.title} - {e.PageList.length}
+        </option>
         );
         }
-        
-     
-
-        return ( 
-            <div className="wrapper">
-                <div className="hub">
-                    <div className="wrapper">                       
-                        <div className="notelist">
-                            <div>
-                                <select id="PageListDD" onClick={this.setSelected}>                        
-                                        {NoteDropDownList}
-                                </select>
+        //Note Section
+        var pageSelection = undefined;
+        console.log(this.state);
+        if(this.state.selectedNotebook.PageList != undefined && this.state.selectedNotebook.PageList.length > 0){
+            pageSelection = this.state.selectedNotebook.PageList.map((e)=>
+        <option key={e.section} value={e.section}>
+                {e.name} - {e.texts.length}
+        </option>
+        );
+        }
+        var noteSelection = undefined;
+        if(selected != undefined && selected.texts != undefined){
+            var pageName = selected.name;
+            noteSelection = selected.texts.map((e)=>
+                <option key={e.id} value={e.id}>
+                        {e.id + 1}: {pageName} ({e.date})
+                </option>
+            );
+        }
+        var code;
+        if((!this.state.isUploaded && !this.state.isNew)){
+            code = (
+                    <div className="hub">
+                        <LandingPage
+                            yours={this.state.yours}
+                            isEncrypt={this.state.isEncrypt}
+                            test={this.test}
+                            upload={this.upload}
+                            handleChange={this.handleChange}
+                            title={this.state.title}
+                            addNotebook={this.addNotebook} />
+                    </div>
+            );
+        }else{
+            code =(
+                <div className="wrapper">
+                        <div className ="TheAwesomeTextBox">                    
+                            <div className="wrapper">
+                                <div className="SectionThreeATB">
+                                    <div className="Overview"> 
+                                        <OverviewComponent  handleChange={this.handleChange} 
+                                                            DeleteNotebook={this.DeleteNotebook} 
+                                                            title={this.state.selectedNotebook.title}
+                                                            originalTitle ={this.state.originalTitle}
+                                                            selected={this.state.selected} 
+                                                            selectNotebook={this.selectNotebook} 
+                                                            notebookSelect={notebookSelect}
+                                                            saveLoad={this.saveLoad}
+                                                            addNotebook={this.addNotebook}
+                                                            downloadNoteFile={this.downloadNoteFile}
+                                                            selectedNotebookValue ={this.state.selectedNotebookValue} />                  
+                                    </div>
+                                </div>
+                                <div className="SectionOneATB">
+                                    <div className="TheAwesomeTextBoxChild" id="TheAwesomeTextBox">
+                                            <h2>Awesome Text Box for Page {selected.name}</h2>
+                                            <div>
+                                                <textarea className='main-text' name="mainText" id="awesometextarea" value={this.state.selectedNotebook.mainText} onChange={this.handleChange} rows="10" cols="50"/>
+                                            </div>                            
+                                            <div>
+                                                <button onClick={this.tagAssign}>Tag</button>
+                                                <button onClick={this.addNote} id={selected.section}>Add Note</button>
+                                            </div>             
+                                        </div>
+                                        
+                                </div>
+                                <div className="SectionTwoATB">
+                                        <div className="TheAwesomeTextBoxChild" id="NoteSectionList">
+                                            <select id="selectPage"  onChange={this.selectPage} value={this.state.selectedNotebook.selectedPageValue}>
+                                                {pageSelection}
+                                            </select>
+                                            <div>
+                                                <input type="text" name="pageName" value={this.state.selectedNotebook.pageName} onChange={this.handleChange}/>
+                                                <button onClick={this.addPage}>New Page</button>
+                                            </div> 
+                                            <div id="info_section">
+                                                <label>{this.state.selectedNotebook.selectedPage.name}</label> 
+                                                <button onClick={this.PageDelete} id={this.state.selectedNotebook.selectedPage.section}>Remove Page</button>
+                                            </div>
+                                        </div>
+                                    <div className="NoteSection" >
+                                            <div id="notes">
+                                            <select id="selectNote" onChange={this.selectNote} value={this.state.selectedNotebook.selectNoteValue}>
+                                                {noteSelection}
+                                            </select>
+                                            <textarea value={this.state.selectedNote !== undefined ? this.state.selectedNote.text :'' } onChange={this.handleChange} rows="10" cols="50" readOnly/>
+                                            </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div>
-                                <button onClick={this.saveLoad}>{this.state.selected ? 'Save' : 'Load'}</button>
-                                <button onClick={this.newNote} >New</button>  
-                            </div>                                
                         </div>
-                        <div className="upload">
-                            <input id="upload" type="file" /> 
-                            <button onClick={this.upload}>Upload</button>
-                            <button onClick={this.downloadNoteFile}>Export</button>
+                        <div className="TheNote">
+                        {this.state.testDisplay}
                         </div>
-                    </div>
                 </div>
-                
-                <div className="Overview">
-                    <div className="wrapper">
-                        <div className="OverviewChild">
-                            <label htmlFor="title">Title:</label>
-                            <input  type="text" id="title" name="title" value={this.state.title} onChange={this.handleChange} />
-                            <button onClick={this.NotebookDelete}>Remove Notebook</button>
-                        </div>
-                        <div className="OverviewChild">
-                            <label htmlFor="author">Author:</label>
-                            <input  type="text" id="author" name="author" value={this.state.author} onChange={this.handleChange} />                            
-                        </div>
-                    </div>                    
-                </div>
-
-                <div className ="TheAwesomeTextBox">                    
-                    <div className="wrapper">
-                        <div className="TheAwesomeTextBoxChild" id="TheAwesomeTextBox">
-                            <h2>The Awesome Text Box</h2>
-                            <div>
-                                <textarea className='main-text' name="mainText" id="awesometextarea" value={this.state.mainText} onChange={this.handleChange} rows="10" cols="50"/>
-                            </div>                            
-                            <div>
-                                <button onClick={this.tagAssign}>Tag</button>
-                            </div>             
-                        </div>
-                        <div className="TheAwesomeTextBoxChild" id="NoteSectionList">
-                            <div>
-                                <input type="text" name="sectionName" value={this.state.sectionName} onChange={this.handleChange}/>
-                                <button onClick={this.addSection}>New Section</button>
-                            </div> 
-                            <ul>
-                                {noteSelection}
-                            </ul>
-                        </div>
-                    
-                    </div>
-                </div>
-
-                <div className="NoteSection" >
-                    <div className="wrapper">
-                        <div id="info_section">
-                            <label>{this.state.selectedNote.name}</label> 
-                        </div>
-                        <div id="notes">
-                            {this.state.selectedDisplayText}
-                        </div>
-                    </div> 
-                </div>
-
-                <div className="TheNote">
-                    <textarea value={this.state.selectedNote.note} readOnly/>
-                </div>
+            );
+        }
+        return (
+            <div>
+                {code}                
             </div>
+            
             
         );
     }
 
 }
+
+
+
+/*
+                            <textarea value={this.state.selectedPage.note} readOnly/>
+
+                <button onClick={this.PageDelete} id={e.section}>-</button>
+*/
+
+class LandingPage extends Component{
+    constructor(props){
+        super(props);
+    }
+
+    render(){
+        return(
+            <div className="wrapper">
+                <div className="new">
+                    <label htmlFor="title">Title:</label>
+                    <input  type="text" id="title" name="title" value={this.props.title} onChange={this.props.handleChange} />
+                    <button onClick={this.props.addNotebook} >New Notebook</button>
+                </div>
+                <div className="crypt">
+                    <label htmlFor="yours">Key:</label>
+                    <input type="text"  name='yours' value={this.props.yours} onChange={this.props.handleChange} style={{visibility: this.props.isEncrypt ? 'visible' : 'hidden'}} /> 
+                </div>
+                <div className="upload">
+                    <input id="upload" type="file" />
+                    <button onClick={this.props.upload}>Upload</button> 
+                    <label htmlFor="encryptCheck">Encrypt:</label>
+                    <input type='checkbox' name="encryptCheck" value={this.props.isEncrypt} onClick={this.props.test}/>
+                </div>
+            </div>
+
+        );
+    }
+}
+
+
+class OverviewComponent extends Component{
+    constructor(props){
+        super(props);
+    }
+
+    render(){
+        return(
+            <div className="OverviewWrapper">
+                <div className="TitleSection">
+                    <label htmlFor="title">Notebook:</label>
+                    <input  type="text" id="title" name="title" value={this.props.title} onChange={this.props.handleChange} />
+                    <button onClick={this.props.DeleteNotebook}>{'Remove Notebook'}</button>
+                    <button onClick={this.props.addNotebook }>{'Add Notebook'}</button>
+               
+                </div>
+                <div className="notebooklist">
+                    <select id="PageListDD" onChange={this.props.selectNotebook} value={this.props.selectedNotebookValue}>                        
+                              {this.props.notebookSelect}
+                     </select>
+                     <button onClick={this.props.saveLoad}>{this.props.selected ? 'Save' : 'Load'}</button>
+                     <button onClick={this.props.downloadNoteFile}>Export</button>  
+                                          
+                </div>
+            </div> 
+        );
+    }
+}
+
 
