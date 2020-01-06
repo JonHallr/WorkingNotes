@@ -1,4 +1,4 @@
-d /*
+ /*
 lightest to darkest
 #8f9779
 #78866b
@@ -6,6 +6,103 @@ lightest to darkest
 #738678
 #4d5d53
 */
+.basic{
+  text-align: left;
+}
+
+.notebook-wrapper{
+  display:grid;
+  grid-template-columns:repeat(1,1fr);
+  grid-auto-rows:minmax(20px,auto);
+}
+.notebook{
+  grid-row: 1;
+  grid-column:1;
+  padding:10px 10px 10px 25px;
+}
+
+.page-wrapper{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  grid-auto-rows:minmax(20px,auto);
+  padding:10px 10px 10px 25px;
+  border-top:1px solid black;
+  border-left:1px solid black;
+}
+.page-inner-wrapper{
+  display:grid;
+  grid-template-columns:repeat(1,1fr);
+  grid-auto-rows:minmax(20px,auto);
+  padding:10px 10px 10px 25px;
+  border-top:1px solid black;
+  border-left:1px solid black;
+
+}
+.page-inner-wrapper{
+  display:grid;
+  grid-template-columns:repeat(1,1fr);
+  grid-auto-rows:minmax(20px,auto);
+  padding:10px 10px 10px 25px;
+  border-top:1px solid black;
+  border-left:1px solid black;
+
+}
+.awesome-wrapper{
+  display:grid;
+  grid-template-columns:repeat(1,1fr);
+  grid-auto-rows:minmax(20px,auto);
+  padding:10px 10px 10px 25px;
+  border-top:1px solid black;
+  border-left:1px solid black;
+
+}
+.awesome-col-one{
+  Text-align: center;
+}
+.page-inner-col-one{
+}
+.page-inner-col-two{
+  
+}
+.page-col-one-wrapper{
+  display:grid;
+  grid-template-columns:repeat(1,1fr);
+  grid-auto-rows: max-content;
+}
+.page-col-one-row-one{
+  grid-row: 1;
+  grid-column:1;
+  padding:10px 10px 10px 10px;
+  border-bottom: 1px solid black;
+}
+.page-col-one-row-two{
+  grid-row: 2;
+  grid-column:1;
+  padding:10px 10px 10px 40px;
+}
+.page-col-one-row-three{
+  grid-row: 3;
+  grid-column:1;
+  padding:10px 10px 10px 40px;
+}
+.page-col-two-wrapper{
+  display:grid;
+  grid-template-columns:repeat(1,1fr);
+  grid-auto-rows:minmax(20px,auto);
+}
+.page-col-two{
+  grid-row: 1;
+  grid-column:2;
+  margin:10px 10px 10px 10px;
+  border:1px solid black;
+  padding:10px 10px 10px 10px;
+}
+
+
+
+
+
+
 
 /*Hub Section*/
 .hub .wrapper {
@@ -88,10 +185,9 @@ lightest to darkest
     height: 850px;
     border:1px solid red;
   }
-  .TheNote pre{
+  .readOnlyDisplay pre{
     text-align:left;
     word-wrap: break-word;
-    height:15px;
     margin: 0px;
   }
   .TheNoteTest { 
@@ -163,7 +259,7 @@ lightest to darkest
 
   input{
     color:rgb(12, 11, 11);
-    width: 80%;
+    width: 250px;
     height: 30px;
     text-align: center;
     box-align:center;
@@ -179,7 +275,7 @@ lightest to darkest
     background-color: #4d5d53;
     border: none;
     color: white;
-    padding: 15px 32px;
+    padding: 5px 8px;
     text-align: center;
     text-decoration: none;
     display: inline-block;
