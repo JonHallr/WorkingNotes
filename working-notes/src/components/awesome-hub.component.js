@@ -27,6 +27,10 @@ export class AwesomeHubComponent extends Component {
             isNew: false,
             pageView: '',
             noteView: '',
+            noteTitle: '',
+            isNewPage: true,
+            isNewNote: true,
+            noteEdit:false,
         };
 
 
@@ -36,6 +40,7 @@ export class AwesomeHubComponent extends Component {
         this.upload = this.upload.bind(this);
         //Note Section
         this.handlePageNameChange = this.handlePageNameChange.bind(this);
+        this.handleNoteTitleChange = this.handleNoteTitleChange.bind(this);
         this.handleChange = this.handleChange.bind(this);
         this.myRefresh = this.myRefresh.bind(this);
         this.addPage = this.addPage.bind(this);
@@ -64,6 +69,14 @@ export class AwesomeHubComponent extends Component {
         this.save = this.save.bind(this);
 
         this.readOnlyPageDisplay = this.readOnlyPageDisplay.bind(this);
+
+        this.editNote = this.editNote.bind(this);
+
+        this.handleChangeNoteEdit = this.handleChangeNoteEdit.bind(this);
+
+        this.saveNote = this.saveNote.bind(this);
+
+        this.removeNote = this.removeNote.bind(this);
         ;
     }
 
@@ -98,18 +111,35 @@ export class AwesomeHubComponent extends Component {
             } else {
                 temp = JSON.parse(contentBuffer);
             }
-            let temping = this.state.Notebooks;
-            temp.forEach((a) => {
-                temping.push(a);
-            });
+            let tempNotebooks = temp.Notebooks;
+            let tempDeletedNotebooks = temp.DeletedNotebooks;
+           let hasPages = false;
+           let tempPageView = '';
+           let hasNotes = false;
+           let tempNoteView = '';
+           let noteTitleCheck = '';
+           if(tempNotebooks[0].PageList.length > 0){
+                hasPages = true;
+                tempPageView = this.readOnlyPageDisplay(tempNotebooks[0].selectedPage);
+                if(tempNotebooks[0].PageList[0].texts.length > 0){
+                    hasNotes = true;
+                    noteTitleCheck = tempNotebooks[0].PageList[0].texts[0].title;
+                    tempNoteView = this.readOnlyNoteDisplay(tempNotebooks[0].selectedPage.texts[0]);
+                }          
+           }
+           
             this.setState({
-                Notebooks: temp,
-                //selectedNotebook: temp[0],
+                Notebooks: tempNotebooks,
+                DeletedNotebooks: tempDeletedNotebooks,
                 selectedNotebookValue: 0,
-                //PageListDD: templist,
-                isUploaded: true
+                isUploaded: true,
+                isNewPage: !hasPages,
+                isNewNote: !hasNotes,
+                noteTitle: noteTitleCheck,
+                pageView: tempPageView,
+                noteView: tempNoteView,
             });
-            this.load();
+            //this.load();
         } catch (err) {
             console.log('catch');
             console.log(err);
@@ -118,7 +148,11 @@ export class AwesomeHubComponent extends Component {
     }
     downloadNoteFile = () => {
         const x = document.createElement("a");
-        let temp = JSON.stringify(this.state.Notebooks);
+        let tempObject = {
+            Notebooks: this.state.Notebooks,
+            DeletedNotebooks: this.state.DeletedNotebooks
+        }
+        let temp = JSON.stringify(tempObject);
         var crazy;
         if (this.state.isEncrypt && this.state.yours.length > 0) {
             let key = this.state.yours;
@@ -136,53 +170,128 @@ export class AwesomeHubComponent extends Component {
     //Delete
     DeleteNotebook(e) {
         this.mydebug('DeleteNotebook')
-
-        let index = this.state.selectedNotebook.ID;
+        let index = this.state.selectedNotebookValue;
         let tempNotebookList = this.state.Notebooks;
         let tempDNotebookList = this.state.DeletedNotebooks;
-        let deletedNotebook = tempNotebookList[index];
+        let deletedNotebook = this.state.Notebooks[index];
         tempDNotebookList.push(deletedNotebook);
         tempNotebookList.splice(index, 1);
-        for (let x = index; x < tempNotebookList.length; x++) {
-            tempNotebookList[x].ID = x;
+        if(tempNotebookList.length > 0){
+            for (let x = 0; x < tempNotebookList.length; x++) {
+                tempNotebookList[x].ID = x;
+            }
+            this.setState({
+                Notebooks: tempNotebookList,
+                DeletedNotebooks: tempDNotebookList,
+                selectedNotebook: tempNotebookList[0],
+                selectedNotebookValue: 0,
+            });
+            this.save();
+
         }
-        let templist = this.dropDownListCreator(tempNotebookList);
-        this.setState({
-            Notebooks: tempNotebookList,
-            DeletedNotebooks: tempDNotebookList,
-            selectedNotebook: tempNotebookList[0],
-            selectedNotebookValue: 0,
-        });
-        this.save();
+
+
 
     }
     PageDelete(e) {
         this.mydebug('PageDelete')
-        let target = e.target;
-        let index = target.id - 1;
-        let tempPageList = new Array();
-        tempPageList = this.state.PageList;
-        let tempDPageList = this.state.DeletedPageList;
-        let deletedPage = tempPageList[index];
+
+        let index = this.state.selectedNotebookValue;
+        let tempNotebookList = this.state.Notebooks;
+        let pageIndex = tempNotebookList[index].selectedPageValue;
+
+
+        let tempPageList = tempNotebookList[index].PageList;
+        let tempDPageList = tempNotebookList[index].DeletedPageList;
+        let deletedPage = tempPageList[pageIndex];
         tempDPageList.push(deletedPage);
-        tempPageList.splice(index, 1);
-        for (let x = index; x < tempPageList.length; x++) {
-            tempPageList[x].section = x + 1;
+        tempPageList.splice(pageIndex, 1);
+        let tempPageView = '';
+        let tempNoteView = '';
+        let tempNoteTitle = '';
+        let hasNotes = false;
+        let hasPages = false
+        if(tempPageList.length > 0){
+            hasPages = true;
+            for (let x = 0; x < tempPageList.length; x++) {
+                console.log(x);
+                tempPageList[x].section = x;
+            }
+            let newIndex = pageIndex < tempPageList.length ? pageIndex : pageIndex - 1;
+            console.log(newIndex);
+            tempNotebookList[index].PageList = tempPageList;
+            tempNotebookList[index].DeletedPageList = tempDPageList;
+            tempNotebookList[index].selectedPageValue = newIndex
+            tempNotebookList[index].selectedPage = tempPageList[newIndex];
+            tempPageView = this.readOnlyPageDisplay(tempNotebookList[index].selectedPage);
+            if(tempNotebookList[index].selectedPage.texts.length > 0){
+                tempNoteView= this.readOnlyNoteDisplay(tempNotebookList[index].selectedPage.texts[tempNotebookList[index].selectNoteValue]);
+                tempNoteTitle = tempNotebookList[index].selectedPage.texts[tempNotebookList[index].selectNoteValue].title;
+                hasNotes = true;
+            };
+        }else{
+            tempNotebookList[index].PageList = [];
+            tempNotebookList[index].DeletedPageList = tempDPageList;
+            tempNotebookList[index].selectedPageValue = undefined;
+            tempNotebookList[index].selectedPage = {};
         }
-        let newIndex = index < tempPageList.length ? index : tempPageList.length - 1;
         this.setState({
-            PageList: tempPageList,
-            DeletedPageList: tempDPageList,
-            selectedPage: tempPageList[newIndex],
-            selectPageValue: index
+            Notebooks: tempNotebookList,
+            pageView: tempPageView,
+            noteView:tempNoteView,
+            noteTitle:tempNoteTitle,
+            isNewNote: !hasNotes,
+            isNewPage: !hasPages,
         });
         this.save();
-        //this.setText(newIndex)
     }
+
+    removeNote(e){
+        let target = e.target;
+        let index = target.id;
+        let notebookIndex = this.state.selectedNotebookValue;
+        let tempNotebooks = this.state.Notebooks;
+        let tempTexts = tempNotebooks[notebookIndex].PageList[this.state.Notebooks[notebookIndex].selectedPageValue].texts;
+        let tempDeletedTexts = tempNotebooks[notebookIndex].PageList[this.state.Notebooks[notebookIndex].selectedPageValue].deletedTexts;
+        tempDeletedTexts.push(tempTexts[index]);
+        tempTexts.splice(index,1);
+        let tempPageView = '';
+        let tempNoteView = '';
+        let tempNoteTitle = '';
+        let hasNotes = false;   
+        if(tempTexts.length > 0){    
+            for (let x = index; x < tempTexts.length; x++) {
+                tempTexts[x].id = Number(x);
+            }
+            tempNotebooks[notebookIndex].PageList[this.state.Notebooks[notebookIndex].selectedPageValue].texts = tempTexts;
+            tempNotebooks[notebookIndex].PageList[this.state.Notebooks[notebookIndex].selectedPageValue].deletedTexts = tempDeletedTexts;
+            tempPageView = this.readOnlyPageDisplay(tempNotebooks[notebookIndex].PageList[this.state.Notebooks[notebookIndex].selectedPageValue])
+            tempNoteView= this.readOnlyNoteDisplay(tempNotebooks[notebookIndex].selectedPage.texts[tempNotebooks[notebookIndex].selectNoteValue]);
+            tempNoteTitle = tempNotebooks[notebookIndex].selectedPage.texts[tempNotebooks[notebookIndex].selectNoteValue].title;
+            hasNotes = true;
+
+        }else{
+            tempNotebooks[notebookIndex].PageList[this.state.Notebooks[notebookIndex].selectedPageValue].texts = [];
+            tempNotebooks[notebookIndex].PageList[this.state.Notebooks[notebookIndex].selectedPageValue].deletedTexts = tempDeletedTexts;
+
+        }
+
+        this.setState({
+            Notebooks: tempNotebooks,
+            pageView: tempPageView,
+            noteView:tempNoteView,
+            noteTitle:tempNoteTitle,
+            isNewNote: !hasNotes,
+        })
+
+
+
+    }
+
     NoteTextDelete(e) {
         let target = e.target;
         let index = target.id;
-        let selectedIndex = Number(this.state.selectedPage.section) - 1;
+        let selectedIndex = this.state.selectedPage.section;
         let tempList = this.state.PageList;
 
         let tempSection = this.state.selectedPage;
@@ -205,35 +314,53 @@ export class AwesomeHubComponent extends Component {
 
     addPage() {
         this.mydebug('addPage');
+        let d = new Date();
         let tempNotebooks = this.state.Notebooks;
-        let selectedNotebookIndex = this.state.selectedNotebookValue;
-        let tempSelectedNotebook = tempNotebooks[selectedNotebookIndex];
-        //var templateList = tempSelectedNotebook.pageName.split(";");
-        //templateList.forEach((name) => {
-            let hv = tempSelectedNotebook.PageList.length > 0 ? true : false;
-            let temp = tempSelectedNotebook;
-            let os = hv ? temp.PageList[temp.PageList.length - 1] : 0;
-            let ns = hv ? os.section + 1 : os + 1;
+        let tempSelectedNotebook = tempNotebooks[this.state.selectedNotebookValue];
+        let tempObj = {
+                name: '<New Page>',
+                section: tempSelectedNotebook.PageList.length > 0 ? tempSelectedNotebook.PageList.length: 0,
+                texts: [],
+                deletedTexts: [],
+                time: d.getHours() + ":" + d.getMinutes() + ":" + d.getSeconds(),
+                date: (d.getMonth() + 1) + '/' + d.getDate() + '/' + d.getFullYear(),
+            }
+        /*
+            let pagelistCheck = tempSelectedNotebook.PageList.length > 0 ? true : false;
+            let os = pagelistCheck ? tempSelectedNotebook.PageList[tempSelectedNotebook.PageList.length - 1] : 0;
+            let ns = pagelistCheck ? os.section + 1 : os + 1;
             let tempObj = {
                 name: '<New Page>',
                 section: ns,
                 texts: [],
-                deletedTexts: []
+                deletedTexts: [],
+                time: d.getHours() + ":" + d.getMinutes() + ":" + d.getSeconds(),
+                date: (d.getMonth() + 1) + '/' + d.getDate() + '/' + d.getFullYear(),
             }
-            temp.pageName = '';
-            temp.selectedPage = tempObj;
-            temp.selectedPageValue = ns;
-            temp.selectedNote = {};
-            temp.PageList.push(tempObj);
-            tempNotebooks[selectedNotebookIndex] = temp;
+            */
+           console.log(tempObj.section);
+            tempSelectedNotebook.pageName = '';
+            tempSelectedNotebook.selectedPage = tempObj;
+            tempSelectedNotebook.selectedPageValue =tempObj.section;
+            tempSelectedNotebook.selectedNote = {};
+            tempSelectedNotebook.PageList.push(tempObj);
+            tempNotebooks[this.state.selectedNotebookValue] = tempSelectedNotebook;
+            console.log(tempNotebooks);
+            var newPageCheck = this.state.isNewPage;
+            if(newPageCheck){newPageCheck = false};
             this.setState({
-                Notebooks: tempNotebooks
+                Notebooks: tempNotebooks,
+                noteTitle: '',
+                noteView:'',
+                pageView:'',
+                isNewPage: newPageCheck,
+                isNewNote: true,              
             });
             this.save();
-        //});
     }
     addNotebook() {
         this.mydebug('addNotebook');
+        let d = new Date();
         let tempList = this.state.Notebooks.length > 0 ? this.state.Notebooks : [];
         let tempID = this.state.Notebooks.length > 0 ? this.state.Notebooks.length : 0;
         let singleObj = new Object({
@@ -244,15 +371,22 @@ export class AwesomeHubComponent extends Component {
             title: '<New Notebook>',
             selectedPage: {},
             PageList: [],
+            DeletedPageList:[],
             selectedDisplayText: '',
             globalTagList: [],
-            isNew: true
+            isNew: true,
+            time: d.getHours() + ":" + d.getMinutes() + ":" + d.getSeconds(),
+            date: (d.getMonth() + 1) + '/' + d.getDate() + '/' + d.getFullYear(),
         });
         tempList.push(singleObj);
         this.setState({
             Notebooks: tempList,
             selectedNotebookValue: tempID,
-            isNew: true
+            isNew: true,
+            isNewPage: true,
+            isNewNote: true,
+            noteView: '',
+            pageView: '',
         });
 
     }
@@ -263,7 +397,7 @@ export class AwesomeHubComponent extends Component {
         let tempNotebooks = this.state.Notebooks;
         let tempSelectedNotebook = this.state.Notebooks[this.state.selectedNotebookValue];
         let globaltaglist = tempSelectedNotebook.globalTagList;
-        let dataIndex = tempSelectedNotebook.selectedPageValue - 1;// Number(event.target.id);
+        let dataIndex = tempSelectedNotebook.selectedPageValue;
         console.log(dataIndex);
         if (tempSelectedNotebook.mainText != undefined && tempSelectedNotebook.mainText.trim() !== '') {
             let d = new Date();
@@ -300,14 +434,16 @@ export class AwesomeHubComponent extends Component {
             tempTagList.forEach((a) => {
                 tempTagString += ' (' + a + ') ';
             });
+            
             //global tag assign
             let tempObject = {
                 original_id: tempId,
                 original_text: tempText,
                 id: tempId,
+                title:'<New Note>',
                 text: tempText.replace(/(\*\-)/g, '') + "\n",
                 time: d.getHours() + ":" + d.getMinutes() + ":" + d.getSeconds(),
-                date: d.getMonth() + '/' + d.getDay() + '/' + d.getFullYear(),
+                date: (d.getMonth() + 1) + '/' + d.getDate() + '/' + d.getFullYear(),
                 visible: 'collapse',
                 tags: tempTagList,
                 tagString: tempTagString
@@ -323,10 +459,15 @@ export class AwesomeHubComponent extends Component {
             tempSelectedNotebook.selectNoteValue = tempId;
             tempSelectedNotebook.mainText = '';
             tempNotebooks[this.state.selectedNotebookValue] = tempSelectedNotebook;
+
+            var isNewNoteCheck = this.state.isNewNote;
+            if(isNewNoteCheck){isNewNoteCheck = false};
             this.setState({
                 Notebooks: tempNotebooks,
                 pageView: tempPageDisplay,
                 noteView: tempNoteDisplay,
+                noteTitle: tempObject.title,
+                isNewNote:isNewNoteCheck,
             });
 
             this.save();
@@ -350,10 +491,17 @@ export class AwesomeHubComponent extends Component {
         }
     }
 
+    editNote(e){
+        this.setState({
+            noteEdit: true,
+        })
+    }
+
     //save
     async save() {
         this.mydebug('save');
         let selectedListItem = this.state.Notebooks[this.state.selectedNotebookValue];
+        console.log(selectedListItem);
         if (selectedListItem) {
             await this.globalTagAssign();
             let xlist = this.state.Notebooks;
@@ -365,17 +513,32 @@ export class AwesomeHubComponent extends Component {
                 title: selectedListItem.title,
                 selectedPage: selectedListItem.selectedPage,
                 PageList: selectedListItem.PageList,
+                DeletedPageList:selectedListItem.DeletedPageList,
                 globalTagList: selectedListItem.globalTagList,
                 selectedPageValue: selectedListItem.selectedPageValue,
                 selectedNote: selectedListItem.selectedNote,
                 selectNoteValue: selectedListItem.selectNoteValue,
-                selectedNotebookValue: this.state.selectedNotebookValue
+                selectedNotebookValue: this.state.selectedNotebookValue,
+                date: selectedListItem.date,
+                time:selectedListItem.time
             });
             await this.setState({
                 Notebooks: xlist,
             });
         }
 
+    }
+
+    saveNote(e){        
+        let tempSelectedNotebook = this.state.Notebooks[this.state.selectedNotebookValue];
+        
+        let tempPageDisplay = this.readOnlyPageDisplay(tempSelectedNotebook.selectedPage);
+        let tempNoteDisplay = this.readOnlyNoteDisplay(tempSelectedNotebook.selectedPage.texts[tempSelectedNotebook.selectNoteValue]);
+        this.setState({
+            noteEdit: false,
+            pageView: tempPageDisplay,
+            noteView:tempNoteDisplay
+        });
     }
 
     //load
@@ -406,44 +569,69 @@ export class AwesomeHubComponent extends Component {
         await this.load();
     }
 
-    selectNotebook() {
+    selectNotebook(event) {
         this.mydebug("selectNotebook");
-        let tempSelected = document.getElementById("PageListDD");
-        let id = Number(tempSelected.options[tempSelected.selectedIndex].value);
+        let target = event.target;
+        let value = target.value;
+        let id = value;
         let selectedTempNotebook = {};
-        selectedTempNotebook = this.state.Notebooks[id].selectedNotebook;
-        console.log(selectedTempNotebook);
+        selectedTempNotebook = this.state.Notebooks[id];
+        let hasPages = false;
+        let tempPageView = '';
+        let hasNotes = false;
+        let tempNoteView = '';
+        let noteTitleCheck = '';
+        if(selectedTempNotebook.PageList.length > 0){
+             hasPages = true;
+             tempPageView = this.readOnlyPageDisplay(selectedTempNotebook.selectedPage);
+             if(selectedTempNotebook.selectedPage.texts.length > 0){
+                 hasNotes = true;
+                 noteTitleCheck = selectedTempNotebook.selectedNote.title;
+                 tempNoteView = this.readOnlyNoteDisplay(selectedTempNotebook.selectedNote);
+             }          
+        }
         this.setState({
             selectedNotebook: selectedTempNotebook,
-            selectedNotebookValue: id
+            selectedNotebookValue: id,
+            isNewPage: !hasPages,
+            isNewNote: !hasNotes,
+            pageView:tempPageView,
+            noteView: tempNoteView,
+            noteTitle:noteTitleCheck,
         });
         this.load();
     }
 
-    selectPage() {
+    selectPage(event) {
         /*update the selected page*/
         this.mydebug("selectPage");
-        let tempSelected = document.getElementById("selectPage");
-        let id = Number(tempSelected.options[tempSelected.selectedIndex].value);
+        let target = event.target;
+        let value = Number(target.value);
+        console.log(value);
+        let id = value;
         let dataIndex = id - 1;
-        let selectedTemp = {};
         console.log(id);
         let tempNotebook = this.state.Notebooks;
         let tempSelectedNotebook = tempNotebook[this.state.selectedNotebookValue];
-        tempSelectedNotebook.selectedPage = tempSelectedNotebook.PageList[dataIndex];
+        tempSelectedNotebook.selectedPage = tempSelectedNotebook.PageList[id];
         tempSelectedNotebook.selectedPageValue = id;
         console.log(tempSelectedNotebook);
+        let tempPageView = '';
+        let tempNoteView = '';
+        let tempNoteTitle = '';
+        let hasNotes = false;
         if(tempSelectedNotebook.selectedPage.texts.length > 0){
-            var tempPageView = this.readOnlyPageDisplay(tempSelectedNotebook.selectedPage)
-            console.log(tempSelectedNotebook.selectNoteValue);
-            var tempNoteView= this.readOnlyNoteDisplay(tempSelectedNotebook.selectedPage.texts[tempSelectedNotebook.selectNoteValue]);
-            console.log(tempNotebook);
-
+            tempPageView = this.readOnlyPageDisplay(tempSelectedNotebook.selectedPage)
+            tempNoteView= this.readOnlyNoteDisplay(tempSelectedNotebook.selectedPage.texts[tempSelectedNotebook.selectNoteValue]);
+            tempNoteTitle = tempSelectedNotebook.selectedPage.texts[tempSelectedNotebook.selectNoteValue].title;
+            hasNotes = true;
         };
         this.setState({
             Notebooks: tempNotebook,
             pageView: tempPageView,
-            noteView:tempNoteView
+            noteView:tempNoteView,
+            noteTitle:tempNoteTitle,
+            isNewNote: !hasNotes,
         });
     }
 
@@ -454,14 +642,15 @@ export class AwesomeHubComponent extends Component {
         let id = Number(tempSelected.options[tempSelected.selectedIndex].value);
         let tempNotebook = this.state.Notebooks;
         let tempSelectedNotebook = tempNotebook[this.state.selectedNotebookValue];
-        let temp = tempSelectedNotebook.PageList[tempSelectedNotebook.selectedPageValue - 1];
+        let temp = tempSelectedNotebook.PageList[tempSelectedNotebook.selectedPageValue];
 
         tempSelectedNotebook.selectNoteValue = id;
         console.log(tempSelectedNotebook)
         let tempdisplay = this.readOnlyNoteDisplay(temp.texts[id])
         this.setState({
             Notebooks: tempNotebook,
-            noteView: tempdisplay
+            noteView: tempdisplay,
+            noteTitle: temp.texts[id].title,
         });
     }
 
@@ -530,10 +719,12 @@ export class AwesomeHubComponent extends Component {
         let target = event.target;
         let value = target.value;
         let name = target.name;
+        console.log(name);
         let temp = {};
         let tempNotebooks = this.state.Notebooks;
         let tempSelectedNotebook = this.state.Notebooks[this.state.selectedNotebookValue];
         tempSelectedNotebook[name] = value;
+        console.log(tempSelectedNotebook);
         tempNotebooks[this.state.selectedNotebookValue] = tempSelectedNotebook;
         this.setState({
             Notebooks: tempNotebooks
@@ -555,6 +746,20 @@ export class AwesomeHubComponent extends Component {
         });
             this.save();
     }
+    handleNoteTitleChange(event) {
+        //This handles the name change for a note
+        let target = event.target;
+        let value = target.value;
+        let tempNotebooks = this.state.Notebooks;
+        let tempSelectedNotebook = this.state.Notebooks[this.state.selectedNotebookValue];
+        tempSelectedNotebook.selectedPage.texts[tempSelectedNotebook.selectNoteValue].title = value;
+        tempNotebooks[this.state.selectedNotebookValue] = tempSelectedNotebook;
+        this.setState({
+            Notebooks: tempNotebooks,
+            noteTitle: value,
+        });
+            this.save();
+    }
     handleNoteSectionEditChange(event) {
         //This will handle any state that is not an object or part of an array I pass in the name of the state value and assign that and then assign the value 
         //this is helpful because then I only need one handleChange for at least these simple changes.
@@ -572,6 +777,18 @@ export class AwesomeHubComponent extends Component {
         this.setState({
             PageList: tempList,
             selectedPage: tempSelected
+        });
+    }
+
+    handleChangeNoteEdit(event){
+        let target = event.target;
+        let value = target.value;
+        let tempNotebooks = this.state.Notebooks;
+        let tempSelectedNotebook = this.state.Notebooks[this.state.selectedNotebookValue];
+        tempSelectedNotebook.selectedPage.texts[tempSelectedNotebook.selectNoteValue].text = value;
+        tempNotebooks[this.state.selectedNotebookValue] = tempSelectedNotebook;
+        this.setState({
+            Notebooks: tempNotebooks,
         });
     }
 
@@ -645,7 +862,6 @@ export class AwesomeHubComponent extends Component {
 
     render() {
         
-        //var SelectedPage = this.state.Notebooks[this.state.selectedNotebookValue].PageList.length > 0 ? this.state.Notebooks[this.state.selectedNotebookValue].selectedPage : {};
         let selectedNotebook = this.state.Notebooks[this.state.selectedNotebookValue];
         var notebookSelect = undefined;
         var pageSelection = undefined;
@@ -655,7 +871,7 @@ export class AwesomeHubComponent extends Component {
             if (this.state.Notebooks != undefined && this.state.Notebooks.length > 0) {
                 notebookSelect = this.state.Notebooks.map((e) =>
                     <option key={e.ID} value={e.ID}>
-                        {e.title} - {e.PageList.length}
+                        {e.title}  ({e.date}) - {e.PageList.length}
                     </option>
                 );
             }
@@ -663,18 +879,17 @@ export class AwesomeHubComponent extends Component {
             if (selectedNotebook.PageList != undefined && selectedNotebook.PageList.length > 0) {
                 pageSelection = selectedNotebook.PageList.map((e) =>
                     <option key={e.section} value={e.section}>
-                        {e.name} - {e.texts.length}
+                        {e.name}  ({e.date}) - {e.texts.length}
                     </option>
                 );
             }
-            console.log('noteSelection');
-            let pageIndex = selectedNotebook.selectedPageValue - 1;
+            let pageIndex = selectedNotebook.selectedPageValue ;
             let pagelist = selectedNotebook.PageList[pageIndex];
             if (pagelist != undefined && pagelist.texts != undefined) {
                 var pageName = pagelist.name;
                 noteSelection = pagelist.texts.map((e) =>
                     <option key={e.id} value={e.id}>
-                        {e.id + 1}: {pageName} ({e.date})
+                        {e.id + 1} : {e.title} ({e.date} : {e.time})
                 </option>
                 );
             }
@@ -710,7 +925,8 @@ export class AwesomeHubComponent extends Component {
                             selectedNotebookValue={this.state.selectedNotebookValue} />
                         <div className="page-wrapper">
                             <div className="page-col-one-wrapper ">
-                                    <PageComponent handlePageNameChange={this.handlePageNameChange}
+                                    <PageComponent 
+                                        handlePageNameChange={this.handlePageNameChange}
                                         handleChange={this.handleChange}
                                         title={this.state.Notebooks[this.state.selectedNotebookValue].selectedPage.name}
                                         Notebooks={this.state.Notebooks}
@@ -719,6 +935,7 @@ export class AwesomeHubComponent extends Component {
                                         pageSelection={pageSelection}
                                         addPage={this.addPage}
                                         PageDelete={this.PageDelete}
+                                        isNewPage = {this.state.isNewPage}
                                     />
                                    <AwesomeTextBoxComponent 
                                         handleChange={this.handleChange}
@@ -728,24 +945,29 @@ export class AwesomeHubComponent extends Component {
                                         tagAssign={this.tagAssign}
                                         addNote={this.addNote}
                                    />
-                                <div className="page-col-one-row-three">
-                                    <label>Note:</label>
-                                    <div id="notes">
-                                        <select id="selectNote" onChange={this.selectNote} value={this.state.Notebooks[this.state.selectedNotebookValue].selectNoteValue}>
-                                            {noteSelection}
-                                        </select>
-                                        <div className="readOnlyDisplay">
-                                            {this.state.noteView}
-                                        </div>
-                                    </div>
-
-                                </div>
+                                   <NoteComponent
+                                        selectNote={this.selectNote}
+                                        Notebooks={this.state.Notebooks}
+                                        selectedNotebookValue = {this.state.selectedNotebookValue}
+                                        noteSelection = {noteSelection}
+                                        noteTitle = {this.state.noteTitle}
+                                        handleNoteTitleChange = {this.handleNoteTitleChange}
+                                        noteView = {this.state.noteView}
+                                        isNewNote = {this.state.isNewNote}
+                                        noteEdit ={this.state.noteEdit}
+                                        editNote = {this.editNote}
+                                        handleChangeNoteEdit = {this.handleChangeNoteEdit}
+                                        texts = {this.editNote ?this.state.Notebooks[this.state.selectedNotebookValue].selectedPage.texts : ''}
+                                        textIndex = {this.state.Notebooks[this.state.selectedNotebookValue].selectNoteValue}
+                                        saveNote = {this.saveNote}
+                                        removeNote={this.removeNote}
+                                    />
                             </div>
-                            <div className="pag-col-two-wrapper">
+                            <div className="page-col-two-wrapper">
                                 <div className="page-col-two">
                                     <label>Page View:</label>
 
-                                    <div className="TheNote">
+                                    <div className="ThePage">
                                         <div className="readOnlyDisplay">
                                             {this.state.pageView}
                                         </div>
@@ -755,6 +977,201 @@ export class AwesomeHubComponent extends Component {
                         </div>
                     </div>
                 </div>
+            );
+        }
+        return (
+            <div>
+                {code}
+            </div>
+
+
+        );
+    }
+
+}
+
+
+class LandingPage extends Component {
+    constructor(props) {
+        super(props);
+    }
+
+    render() {
+        return (
+            <div className="wrapper">
+                <div className="new">
+                    <button onClick={this.props.addNotebook} >New Notebook</button>
+                </div>
+                <div className="crypt">
+                    <label htmlFor="yours">Key:</label>
+                    <input type="text" name='yours' value={this.props.yours} onChange={this.props.handleChange} style={{ visibility: this.props.isEncrypt ? 'visible' : 'hidden' }} />
+                </div>
+                <div className="upload">
+                    <input id="upload" type="file" />
+                    <button onClick={this.props.upload}>Upload</button>
+                    <label htmlFor="encryptCheck">Encrypt:</label>
+                    <input type='checkbox' name="encryptCheck" value={this.props.isEncrypt} onClick={this.props.test} />
+                </div>
+            </div>
+
+        );
+    }
+}
+
+
+class OverviewComponent extends Component {
+    constructor(props) {
+        super(props);
+    }
+
+    render() {
+        return (
+            <div className="OverviewWrapper">
+                <div className="TitleSection">
+                    <label htmlFor="title">Notebook:</label>
+                    <select id="PageListDD" onChange={this.props.selectNotebook} value={this.props.selectedNotebookValue}>
+                        {this.props.notebookSelect}
+                    </select>
+                    <input type="text" id="title" name="title" value={this.props.title} onChange={this.props.handleChange} />
+                </div>
+                <div className="notebooklist">
+                    <button onClick={this.props.DeleteNotebook}>{'Remove Notebook'}</button>
+                    <button onClick={this.props.addNotebook}>{'Add Notebook'}</button>
+                    <button onClick={this.props.downloadNoteFile}>Export</button>
+
+                </div>
+            </div>
+        );
+    }
+}
+
+
+class PageComponent extends Component {
+    constructor(props) {
+        super(props);
+    }
+
+    render() {
+
+        var code = this.props.isNewPage ? 
+        (
+            <div>
+                <label htmlFor="title">Page:</label>
+                <button onClick={this.props.addPage}>New Page</button>
+            </div>
+        ) : (
+         
+         <div>
+             <label htmlFor="title">Page:</label>
+             <select id="selectPage" onChange={this.props.selectPage} value={this.props.Notebooks[this.props.selectedNotebookValue].selectedPageValue}>
+                 {this.props.pageSelection}
+             </select>
+             <input type="text" id="title" name="title" value={this.props.title} onChange={this.props.handlePageNameChange} />
+             <button onClick={this.props.PageDelete} id={this.props.Notebooks[this.props.selectedNotebookValue].selectedPage.section}>Remove Page</button>
+             <button onClick={this.props.addPage}>New Page</button>
+         </div>
+     
+    )
+        return (
+            <div className="page-inner-wrapper">
+                     {code}
+            </div>
+        );
+    }
+}
+
+class NoteComponent extends Component {
+    constructor(props) {
+        super(props);
+    }
+
+    render() {
+        var code;
+        if(this.props.isNewNote){
+            code = (
+                <div>
+                    <label>Note:</label>
+                </div>
+            )
+        }else if(this.props.noteEdit){
+            code = (
+                <div>
+                   <label>Note:</label>
+                   <div id="notes">
+                       <select id="selectNote" onChange={this.props.selectNote} value={this.props.Notebooks[this.props.selectedNotebookValue].selectNoteValue}>
+                           {this.props.noteSelection}
+                       </select>                                        
+                       <input type="text" id="title" name="title" value={this.props.noteTitle} onChange={this.props.handleNoteTitleChange} />
+                        <button onClick={this.props.saveNote} id="noteSave">Save</button>
+                        <button onClick={this.props.removeNote} value={this.props.Notebooks[this.props.selectedNotebookValue].selectNoteValue} id={this.props.Notebooks[this.props.selectedNotebookValue].selectNoteValue}>Remove Note</button>
+                       <div className="TheNote">
+                           <div className="readOnlyDisplay">
+                                <textarea id="editNoteTextArea" value={this.props.texts[this.props.textIndex].text} rows="10" cols="100" onChange={this.props.handleChangeNoteEdit} />                    
+                           </div>
+                       </div>
+                   </div>
+                </div>
+           )
+        } else{
+            code = (
+                <div>
+                   <label>Note:</label>
+                   <div id="notes">
+                       <select id="selectNote" onChange={this.props.selectNote} value={this.props.Notebooks[this.props.selectedNotebookValue].selectNoteValue}>
+                           {this.props.noteSelection}
+                       </select>                                        
+                       <input type="text" id="title" name="title" value={this.props.noteTitle} onChange={this.props.handleNoteTitleChange} />
+                        <button onClick={this.props.editNote} id="noteEdit">Edit</button>
+                        <button onClick={this.props.removeNote} value={this.props.Notebooks[this.props.selectedNotebookValue].selectNoteValue} id={this.props.Notebooks[this.props.selectedNotebookValue].selectNoteValue}>Remove Note</button>
+                        <div className="TheNote">
+                           <div className="readOnlyDisplay">
+                               {this.props.noteView}
+                           </div>
+                       </div>
+                   </div>
+                </div>
+           )
+        }        
+        return (
+            <div className="page-col-one-row-three">
+                     {code}
+            </div>
+        );
+    }
+}
+
+
+class AwesomeTextBoxComponent extends Component {
+    constructor(props) {
+        super(props);
+    }
+
+    render() {
+        return (
+            <div className="awesome-wrapper">
+                <div className="awesome-col-one">
+                    <h2>Awesome Text Box for Page {this.props.selected.name}</h2>
+                    <div>
+                        <textarea className='main-text' name="mainText" id="awesometextarea" value={this.props.Notebooks[this.props.selectedNotebookValue].mainText} onChange={this.props.handleChange} rows="10" cols="50" />
+                    </div>
+                    <div>                        
+                        <button onClick={this.props.addNote} id={this.props.selected.section}>Add Note</button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+}
+
+
+/* not base function
+
+                    <div>
+                        <button onClick={this.props.tagAssign}>Tag</button>
+                    </div>
+
+*/
+
 
                 /*  <div className="wrapper">
                           <div className ="TheAwesomeTextBox">                    
@@ -819,124 +1236,28 @@ export class AwesomeHubComponent extends Component {
                                   {this.state.pageView}
                               </div>
                           </div>
-                  </div>*/
-            );
-        }
-        return (
-            <div>
-                {code}
-            </div>
-
-
-        );
-    }
-
-}
-/*
-tempNotebook
+                  </div>
 */
 
-class LandingPage extends Component {
-    constructor(props) {
-        super(props);
-    }
-
-    render() {
-        return (
-            <div className="wrapper">
-                <div className="new">
-                    <label htmlFor="title">Title:</label>
-                    <input type="text" id="title" name="title" value={this.props.title} onChange={this.props.handleChange} />
-                    <button onClick={this.props.addNotebook} >New Notebook</button>
-                </div>
-                <div className="crypt">
-                    <label htmlFor="yours">Key:</label>
-                    <input type="text" name='yours' value={this.props.yours} onChange={this.props.handleChange} style={{ visibility: this.props.isEncrypt ? 'visible' : 'hidden' }} />
-                </div>
-                <div className="upload">
-                    <input id="upload" type="file" />
-                    <button onClick={this.props.upload}>Upload</button>
-                    <label htmlFor="encryptCheck">Encrypt:</label>
-                    <input type='checkbox' name="encryptCheck" value={this.props.isEncrypt} onClick={this.props.test} />
-                </div>
-            </div>
-
-        );
-    }
-}
+/*
+tempNotebook
 
 
-class OverviewComponent extends Component {
-    constructor(props) {
-        super(props);
-    }
 
-    render() {
-        return (
-            <div className="OverviewWrapper">
-                <div className="TitleSection">
-                    <label htmlFor="title">Notebook:</label>
-                    <select id="PageListDD" onChange={this.props.selectNotebook} value={this.props.selectedNotebookValue}>
-                        {this.props.notebookSelect}
-                    </select>
-                    <input type="text" id="title" name="title" value={this.props.title} onChange={this.props.handleChange} />
-                </div>
-                <div className="notebooklist">
-                    <button onClick={this.props.DeleteNotebook}>{'Remove Notebook'}</button>
-                    <button onClick={this.props.addNotebook}>{'Add Notebook'}</button>
-                    <button onClick={this.props.downloadNoteFile}>Export</button>
+                                <div className="page-col-one-row-three">
+                                    <label>Note:</label>
+                                    <div id="notes">
+                                        <select id="selectNote" onChange={this.selectNote} value={this.state.Notebooks[this.state.selectedNotebookValue].selectNoteValue}>
+                                            {noteSelection}
+                                        </select>                                        
+                                        <input type="text" id="title" name="title" value={this.state.noteTitle} onChange={this.handleNoteTitleChange} />
+                                       <div className="TheNote">
+                                       <div className="readOnlyDisplay">
+                                            {this.state.noteView}
+                                        </div>
+                                       </div>
+                                       
+                                    </div>
 
-                </div>
-            </div>
-        );
-    }
-}
-
-
-class PageComponent extends Component {
-    constructor(props) {
-        super(props);
-    }
-
-    render() {
-        return (
-            <div className="page-inner-wrapper">
-                <div className="page-inner-col-one">
-                    <label htmlFor="title">Page:</label>
-                    <select id="selectPage" onChange={this.props.selectPage} value={this.props.Notebooks[this.props.selectedNotebookValue].selectedPageValue}>
-                        {this.props.pageSelection}
-                    </select>
-                    <input type="text" id="title" name="title" value={this.props.title} onChange={this.props.handlePageNameChange} />
-                    <button onClick={this.props.PageDelete} id={this.props.Notebooks[this.props.selectedNotebookValue].selectedPage.section}>Remove Page</button>
-                    <button onClick={this.props.addPage}>New Page</button>
-                </div>
-            </div>
-        );
-    }
-}
-
-
-class AwesomeTextBoxComponent extends Component {
-    constructor(props) {
-        super(props);
-    }
-
-    render() {
-        return (
-            <div className="awesome-wrapper">
-                <div className="awesome-col-one">
-                    <h2>Awesome Text Box for Page {this.props.selected.name}</h2>
-                    <div>
-                        <button onClick={this.props.tagAssign}>Tag</button>
-                    </div>
-                    <div>
-                        <textarea className='main-text' name="mainText" id="awesometextarea" value={this.props.Notebooks[this.props.selectedNotebookValue].mainText} onChange={this.props.handleChange} rows="10" cols="50" />
-                    </div>
-                    <div>                        
-                        <button onClick={this.props.addNote} id={this.props.selected.section}>Add Note</button>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-}
+                                </div>
+*/
