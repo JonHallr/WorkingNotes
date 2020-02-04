@@ -1,7 +1,9 @@
 import React, { Component } from 'react';
 import './css/awesome-hub.css';
 import { readOnlyPageDisplay,readOnlyNoteDisplay } from './shared/util';
+import { clone, parenthesizedExpression } from '@babel/types';
 
+import cloneDeep from 'lodash/cloneDeep';
 
 export class AwesomeHubComponent extends Component {
 
@@ -25,6 +27,8 @@ export class AwesomeHubComponent extends Component {
             isNewNote: true,
             noteEdit:false,
             freshNotebook: false,
+            pageCopyToActive: false,
+            pageMoveToActive: false,
         };
 
 
@@ -54,6 +58,8 @@ export class AwesomeHubComponent extends Component {
         this.setState({
             Notebooks: e
         });
+        
+     
             this.save();
     }
     pageComponentSave(e){
@@ -64,6 +70,8 @@ export class AwesomeHubComponent extends Component {
             noteTitle:e.noteTitle,
             isNewNote: e.isNewNote,
             isNewPage: e.isNewPage,
+            pageCopyToActive: e.pageCopyToActive,
+            pageMoveToActive: e.pageMoveToActive
         });
         this.save();
     }
@@ -74,8 +82,6 @@ export class AwesomeHubComponent extends Component {
             this.save();
     }
     NotebookComponentSave(e){
-        console.log(e);
-        console.log("2");
         this.setState({
             Notebooks: e.Notebooks,
             DeletedNotebooks:e.DeletedNotebooks,
@@ -88,7 +94,6 @@ export class AwesomeHubComponent extends Component {
             isNewPage: e.isNewPage,
             freshNotebook: e.freshNotebook,
         });
-        console.log(this.state);
         this.save();
     }
     atbComponentHandleChange(e){
@@ -149,16 +154,13 @@ export class AwesomeHubComponent extends Component {
         this.save();
     }
     landingFreshNotebook(){
-        console.log('landing');
         this.setState({
             freshNotebook:true,
         });
 
     }
     async save() {
-        console.log("3");
         let selectedListItem = this.state.Notebooks[this.state.selectedNotebookValue];
-        console.log(selectedListItem);
         if (selectedListItem) {
             let xlist = this.state.Notebooks;
             xlist.splice(selectedListItem.ID, 1, {
@@ -201,20 +203,7 @@ export class AwesomeHubComponent extends Component {
                 </div>
             );
         } else {
-            var stateObj = {
-                Notebooks: this.state.Notebooks,
-                DeletedNotebooks: this.state.DeletedNotebooks,
-                selected: this.state.selected,
-                selectedNotebook: this.state.selectedNotebook,
-                selectedNotebookValue: this.state.selectedNotebookValue,
-                pageView: this.state.pageView,
-                noteView: this.state.noteView,
-                noteTitle: this.state.noteTitle,
-                isNewPage: this.state.isNewPage,
-                isNewNote: this.state.isNewNote,
-                noteEdit: this.state.noteEdit,
-                freshNotebook: this.state.freshNotebook,
-            }
+            var stateObj = this.state;
             code = (
                 <div className="notebook-wrapper basic">
                     <div className="notebook">
@@ -242,15 +231,9 @@ export class AwesomeHubComponent extends Component {
                                     />
                             </div>
                             <div className="page-col-two-wrapper">
-                                <div className="page-col-two">
-                                    <label>Page View:</label>
-
-                                    <div className="ThePage">
-                                        <div className="readOnlyDisplay">
-                                            {this.state.pageView}
-                                        </div>
-                                    </div>
-                                </div>
+                                    <PageViewComponent
+                                        stateObj = {stateObj}
+                                    />
                             </div>
                         </div>
                     </div>
@@ -266,7 +249,6 @@ export class AwesomeHubComponent extends Component {
 
 }
 
-
 class LandingPage extends Component {
     constructor(props) {
         super(props);
@@ -274,7 +256,7 @@ class LandingPage extends Component {
         this.landingNotebookAdd = this.landingNotebookAdd.bind(this);
     }
     landingNotebookAdd() {
-        console.log("1");
+        //console.log("1");
         let d = new Date();
         let tempList = [];
         let tempID = 0;
@@ -288,7 +270,6 @@ class LandingPage extends Component {
             PageList: [],
             DeletedPageList:[],
             selectedDisplayText: '',
-            globalTagList: [],
             time: d.getHours() + ":" + d.getMinutes() + ":" + d.getSeconds(),
             date: (d.getMonth() + 1) + '/' + d.getDate() + '/' + d.getFullYear(),
         });
@@ -355,8 +336,8 @@ class LandingPage extends Component {
                 pageView: tempPageView,
                 noteView: tempNoteView,
             };
+            console.log(obj);
             this.props.landingUpload(obj);
-            //this.load();
         } catch (err) {
             console.log('catch');
             console.log(err);
@@ -392,7 +373,6 @@ class NotebookComponent extends Component {
         this.handleChange = this.handleChange.bind(this);
     }
     addNotebook() {
-        console.log('addNOtebook');
         let notebookStateObj = this.props.notebookStateObj;
         let d = new Date();
         let tempList = notebookStateObj.Notebooks.length > 0 ? notebookStateObj.Notebooks : [];
@@ -407,10 +387,9 @@ class NotebookComponent extends Component {
             PageList: [],
             DeletedPageList:[],
             selectedDisplayText: '',
-            //globalTagList: [],
-            //isNew: true,
             time: d.getHours() + ":" + d.getMinutes() + ":" + d.getSeconds(),
             date: (d.getMonth() + 1) + '/' + d.getDate() + '/' + d.getFullYear(),
+            selectNoteValue: 0,
         });
         tempList.push(singleObj);
         let tempDeletedNotebooks = notebookStateObj.DeletedNotebooks;
@@ -447,14 +426,12 @@ class NotebookComponent extends Component {
                 tempNotebookList[x].ID = x;
             }
             let newIndex = index < tempNotebookList.length ? index : index - 1;
-            console.log(tempNotebookList);
-            console.log(notebookStateObj);
             if(tempNotebookList[newIndex].PageList != undefined && tempNotebookList[newIndex].PageList.length > 0){
                 hasPages = true;
-                tempPageView = readOnlyPageDisplay(tempNotebookList[newIndex].selectedPage);
                 if(tempNotebookList[newIndex].selectedPage.texts.length > 0){
                     hasNotes = true;
                     noteTitleCheck = tempNotebookList[newIndex].selectedNote.title;
+                    tempPageView = readOnlyPageDisplay(tempNotebookList[newIndex].selectedPage);
                     tempNoteView = readOnlyNoteDisplay(tempNotebookList[newIndex].selectedNote);
                 }          
            }
@@ -485,15 +462,7 @@ downloadNoteFile = () => {
             DeletedNotebooks: notebookStateObj.DeletedNotebooks
         }
         let temp = JSON.stringify(tempObject);
-        /*
-        var crazy;
-        if (this.state.isEncrypt && this.state.yours.length > 0) {
-            let key = this.state.yours;
-            crazy = CryptoJS.AES.encrypt(temp, key);
-        }
-        */
         const file = new Blob([temp], { type: 'application/json' });
-        //const file = new Blob([temp], {type: 'application/json'});
         x.href = URL.createObjectURL(file);
         x.download = "MyAwesomeNote.json";
         document.body.appendChild(x); // Required for this to work in FireFox
@@ -503,22 +472,25 @@ selectNotebook(event) {
         let notebookStateObj = this.props.notebookStateObj;
         let target = event.target;
         let value = target.value;
-        let id = value;
-        let selectedTempNotebook = {};
-        selectedTempNotebook = notebookStateObj.Notebooks[id];
-        console.log(selectedTempNotebook);
+        let id = Number(value);
+        let selectedTempNotebook = notebookStateObj.Notebooks[id];
         let hasPages = false;
         let tempPageView = '';
         let hasNotes = false;
         let tempNoteView = '';
         let noteTitleCheck = '';
+        console.log(selectedTempNotebook);
+        console.log(selectedTempNotebook.selectedPageValue);
+        console.log(selectedTempNotebook.PageList);
         if(selectedTempNotebook.PageList.length > 0){
              hasPages = true;
-             tempPageView = readOnlyPageDisplay(selectedTempNotebook.selectedPage);
-             if(selectedTempNotebook.selectedPage.texts.length > 0){
+             let tempIndex = selectedTempNotebook.selectedPageValue != undefined ? selectedTempNotebook.selectedPageValue : 0;
+             let pageIndex = selectedTempNotebook.PageList.length >= tempIndex ? tempIndex : tempIndex - 1 ;
+             if(selectedTempNotebook.PageList[pageIndex].texts !== undefined && selectedTempNotebook.PageList[pageIndex].texts.length > 0){
                  hasNotes = true;
-                 noteTitleCheck = selectedTempNotebook.PageList[selectedTempNotebook.selectedPageValue].texts[selectedTempNotebook.selectNoteValue].title;
-                 tempNoteView = readOnlyNoteDisplay(selectedTempNotebook.PageList[selectedTempNotebook.selectedPageValue].texts[selectedTempNotebook.selectNoteValue]);
+                 tempPageView = readOnlyPageDisplay(selectedTempNotebook.PageList[pageIndex]);
+                 noteTitleCheck = selectedTempNotebook.PageList[pageIndex].texts[0].title;
+                 tempNoteView = readOnlyNoteDisplay(selectedTempNotebook.PageList[pageIndex].texts[0]);
              }          
         }
         let tempNotebooks = notebookStateObj.Notebooks;
@@ -558,7 +530,7 @@ selectNotebook(event) {
         if (notebookStateObj.Notebooks != undefined && notebookStateObj.Notebooks.length > 0) {
             notebookSelect = notebookStateObj.Notebooks.map((e) =>
                 <option key={e.ID} value={e.ID}>
-                    {e.title}  ({e.date}) - {e.PageList.length}
+                    #{e.ID + 1} - {e.title}  ({e.date}) - {e.PageList.length}
                 </option>
             );
         }
@@ -581,15 +553,222 @@ selectNotebook(event) {
         );
     }
 }
-
 class PageComponent extends Component {
     constructor(props) {
         super(props);
+        this.stateChange = props.stateChange || new Function();
+
+        this.state = {
+            pageNumber: 1,
+            notebookNumber: 0,
+            copyToSet: false,
+            moveToSet: false,
+        }
 
         this.handlePageNameChange = this.handlePageNameChange.bind(this);
         this.selectPage = this.selectPage.bind(this);
         this.addPage = this.addPage.bind(this);
         this.removePage = this.removePage.bind(this);
+
+        this.copyToSet = this.copyToSet.bind(this);
+        this.moveToSet = this.moveToSet.bind(this);
+
+        this.pageCopyTo = this.pageCopyTo.bind(this);
+        this.pageMoveTo = this.pageMoveTo.bind(this);
+
+
+        this.selectToNotebook = this.selectToNotebook.bind(this);
+        this.pageNumberOnChange = this.pageNumberOnChange.bind(this);
+    }
+    moveToSet(){
+        let value = !this.state.moveToSet;
+        this.setState({
+            moveToSet:value,
+            copyToSet:false,
+        });
+    }
+    pageMoveTo(){
+        let pageStateObj = this.props.stateObj;
+        let copyToNotebook = this.state.notebookNumber;
+        let copyPageTo = Number(this.state.pageNumber);
+        let notebooks = pageStateObj.Notebooks;
+        let copyPageValue = cloneDeep(notebooks[pageStateObj.selectedNotebookValue].PageList[notebooks[pageStateObj.selectedNotebookValue].selectedPageValue]) ;
+        let goingToPagelist = cloneDeep(notebooks[copyToNotebook].PageList);
+
+        if(copyToNotebook === pageStateObj.selectedNotebookValue){
+            goingToPagelist.splice(notebooks[pageStateObj.selectedNotebookValue].selectedPageValue, 1);
+        }
+
+        let pageSizeCheck = goingToPagelist.length;       
+        let temp = []
+        if(pageSizeCheck >= copyPageTo){ 
+            if(pageSizeCheck === copyPageTo){
+                temp.push(copyPageValue);
+                 goingToPagelist.forEach((a)=>{
+                    temp.push(a);
+                });
+            }else{         
+                for(let x = 0; x < goingToPagelist.length; x++){
+                    if(x === (copyPageTo - 1)){
+                        temp.push(copyPageValue);
+                        temp.push(goingToPagelist[x]);
+                    }else{
+                        temp.push(goingToPagelist[x]);
+                    }
+                }
+
+            }
+
+            }else{
+                temp.push(copyPageValue);
+            }
+            console.log(temp);
+            for (let x = 0; x < temp.length; x++) {
+                temp[x].pageNumber = x;
+            }
+            console.log(temp);
+
+            if(copyToNotebook !== pageStateObj.selectedNotebookValue){
+                let leavingPagelist = cloneDeep(notebooks[pageStateObj.selectedNotebookValue].PageList);
+                let deletedPage = cloneDeep(notebooks[pageStateObj.selectedNotebookValue].PageList[notebooks[pageStateObj.selectedNotebookValue].selectedPageValue]);
+                let deleted = []
+                deleted.push(deletedPage)
+                leavingPagelist[notebooks[pageStateObj.selectedNotebookValue].selectedPageValue].deletedPage = deleted;
+                leavingPagelist.splice(notebooks[pageStateObj.selectedNotebookValue].selectedPageValue, 1);
+                
+                for (let x = 0; x < leavingPagelist.length; x++) {
+                    leavingPagelist[x].pageNumber = x;
+                }
+                notebooks[pageStateObj.selectedNotebookValue].PageList = leavingPagelist;
+
+
+            notebooks[copyToNotebook].PageList = temp;
+
+            let tempPageView = '';
+            let tempNoteView = '';
+            let tempNoteTitle = '';
+            let hasNotes = false;
+            let hasPages = false;
+            if(notebooks[pageStateObj.selectedNotebookValue].PageList.length > 0){
+                hasPages = true;
+                let tempIndex = notebooks[pageStateObj.selectedNotebookValue].selectedPageValue;
+                let pageIndex = tempIndex !== 0 ? tempIndex - 1 : tempIndex
+                if(notebooks[pageStateObj.selectedNotebookValue].PageList[pageIndex].texts.length > 0){
+                    tempPageView = readOnlyPageDisplay(notebooks[pageStateObj.selectedNotebookValue].PageList[pageIndex])
+                    tempNoteView= readOnlyNoteDisplay(notebooks[pageStateObj.selectedNotebookValue].PageList[pageIndex].texts[0]);
+                    tempNoteTitle = notebooks[pageStateObj.selectedNotebookValue].PageList[pageIndex].texts[0].title;
+                    hasNotes = true;
+                };
+            }
+            let obj ={
+                Notebooks: notebooks,
+                pageView: tempPageView,
+                noteView:tempNoteView,
+                noteTitle:tempNoteTitle,
+                isNewNote: !hasNotes,
+                isNewPage: !hasPages,
+            };
+            this.setState({
+                pageNumber: 1,
+                notebookNumber: 0,
+                copyToSet: false,
+                moveToSet: false,
+
+            });
+    
+            this.props.pageComponentSave(obj);
+
+        }
+    }
+
+
+
+    copyToSet(){
+        let value = !this.state.copyToSet;
+        this.setState({
+            moveToSet:false,
+            copyToSet:value,
+        });
+    }
+    pageCopyTo(){
+        let pageStateObj = this.props.stateObj;
+        let copyToNotebook = this.state.notebookNumber;
+        let copyPageTo = Number(this.state.pageNumber);
+        let notebooks = pageStateObj.Notebooks;
+        let copyPageValue = cloneDeep(notebooks[pageStateObj.selectedNotebookValue].PageList[notebooks[pageStateObj.selectedNotebookValue].selectedPageValue]) ;
+        let pagelist = cloneDeep(notebooks[copyToNotebook].PageList);
+        let pageSizeCheck = pagelist.length;       
+        let temp = []
+        if(pageSizeCheck >= copyPageTo){ 
+            if(pageSizeCheck === copyPageTo){
+                temp = pagelist;
+                temp.push(copyPageValue);
+            }else{         
+                for(let x = 0; x < pagelist.length; x++){
+                    if(x === (copyPageTo - 1)){
+                        temp.push(copyPageValue);
+                        temp.push(pagelist[x]);
+                    }else{
+                        temp.push(pagelist[x]);
+                    }
+                }
+
+            }
+        }else{
+            temp.push(copyPageValue);
+        }
+        for (let x = 0; x < temp.length; x++) {
+            temp[x].pageNumber = x;
+        }
+        notebooks[copyToNotebook].PageList = temp;
+
+        let tempPageView = '';
+        let tempNoteView = '';
+        let tempNoteTitle = '';
+        let hasNotes = false;
+        if(notebooks[pageStateObj.selectedNotebookValue].PageList[notebooks[pageStateObj.selectedNotebookValue].selectedPageValue].texts.length > 0){
+            notebooks[copyToNotebook].selectNoteValue = notebooks[pageStateObj.selectedNotebookValue].selectNoteValue;
+            tempPageView = readOnlyPageDisplay(notebooks[pageStateObj.selectedNotebookValue].PageList[notebooks[pageStateObj.selectedNotebookValue].selectedPageValue])
+            tempNoteView= readOnlyNoteDisplay(notebooks[pageStateObj.selectedNotebookValue].PageList[notebooks[pageStateObj.selectedNotebookValue].selectedPageValue].texts[0]);
+            tempNoteTitle = notebooks[pageStateObj.selectedNotebookValue].PageList[notebooks[pageStateObj.selectedNotebookValue].selectedPageValue].texts[0].title;
+            hasNotes = true;
+        };
+        let obj ={
+            Notebooks: notebooks,
+            pageView: tempPageView,
+            noteView:tempNoteView,
+            noteTitle:tempNoteTitle,
+            isNewNote: !hasNotes,
+            isNewPage: false,
+            pageCopyToActive:false,
+            pageMoveToActive:false,
+        };
+        this.setState({
+            pageNumber: 1,
+            notebookNumber: 0,
+            copyToSet: false,
+            moveToSet: false,
+
+        });
+
+        this.props.pageComponentSave(obj);
+    }
+
+
+
+    selectToNotebook(event){        
+        let target = event.target;
+        let value = Number(target.value);
+        this.setState({
+            notebookNumber: value,
+        });
+    }
+    pageNumberOnChange(event){
+        let target = event.target;
+        let value = target.value;
+        this.setState({
+            pageNumber:value,
+        })
     }
     
     handlePageNameChange(event) {
@@ -606,28 +785,25 @@ class PageComponent extends Component {
         this.props.pageComponentHandleChange(tempNotebooks);
     }
     selectPage(event) {
-        /*update the selected page*/
-        let stateObj = this.props.stateObj;
-        //this.mydebug("selectPage");
+        let pageStateObj = this.props.stateObj;
         let target = event.target;
         let value = Number(target.value);
         console.log(value);
         let id = value;
-        let dataIndex = id - 1;
-        console.log(id);
-        let tempNotebook = stateObj.Notebooks;
-        let tempSelectedNotebook = tempNotebook[stateObj.selectedNotebookValue];
+        let tempNotebook = pageStateObj.Notebooks;
+        let tempSelectedNotebook = tempNotebook[pageStateObj.selectedNotebookValue];
         tempSelectedNotebook.selectedPage = tempSelectedNotebook.PageList[id];
         tempSelectedNotebook.selectedPageValue = id;
-        console.log(tempSelectedNotebook);
+        tempNotebook[pageStateObj.selectedNotebookValue] = tempSelectedNotebook;
         let tempPageView = '';
         let tempNoteView = '';
         let tempNoteTitle = '';
         let hasNotes = false;
-        if(tempSelectedNotebook.selectedPage.texts.length > 0){
-            tempPageView = readOnlyPageDisplay(tempSelectedNotebook.selectedPage)
-            tempNoteView= readOnlyNoteDisplay(tempSelectedNotebook.selectedPage.texts[tempSelectedNotebook.selectNoteValue]);
-            tempNoteTitle = tempSelectedNotebook.selectedPage.texts[tempSelectedNotebook.selectNoteValue].title;
+        console.log(tempSelectedNotebook);
+        if(tempSelectedNotebook.PageList[tempSelectedNotebook.selectedPageValue].texts.length > 0){
+            tempPageView = readOnlyPageDisplay(tempSelectedNotebook.PageList[tempSelectedNotebook.selectedPageValue])
+            tempNoteView= readOnlyNoteDisplay(tempSelectedNotebook.PageList[tempSelectedNotebook.selectedPageValue].texts[0]);
+            tempNoteTitle = tempSelectedNotebook.PageList[tempSelectedNotebook.selectedPageValue].texts[0].title;
             hasNotes = true;
         };
         let obj ={
@@ -642,28 +818,25 @@ class PageComponent extends Component {
         this.props.pageComponentSave(obj);
     }
     addPage() {
-        console.log('working');
-        let stateObj = this.props.stateObj;
+        let pageStateObj = this.props.stateObj;
         let d = new Date();
-        let tempNotebooks = stateObj.Notebooks;
-        let tempSelectedNotebook = tempNotebooks[stateObj.selectedNotebookValue];
-        let tempObj = {
+        let tempNotebooks = pageStateObj.Notebooks;
+        let tempSelectedNotebook = tempNotebooks[pageStateObj.selectedNotebookValue];
+        let tempObj =  {
                 name: '<New Page>',
-                section: tempSelectedNotebook.PageList.length > 0 ? tempSelectedNotebook.PageList.length: 0,
+                pageNumber: tempSelectedNotebook.PageList.length > 0 ? tempSelectedNotebook.PageList.length: 0,
                 texts: [],
                 deletedTexts: [],
                 time: d.getHours() + ":" + d.getMinutes() + ":" + d.getSeconds(),
                 date: (d.getMonth() + 1) + '/' + d.getDate() + '/' + d.getFullYear(),
             }
-           console.log(tempObj.section);
             tempSelectedNotebook.pageName = '';
             tempSelectedNotebook.selectedPage = tempObj;
-            tempSelectedNotebook.selectedPageValue =tempObj.section;
+            tempSelectedNotebook.selectedPageValue =tempObj.pageNumber;
             tempSelectedNotebook.selectedNote = {};
             tempSelectedNotebook.PageList.push(tempObj);
-            tempNotebooks[stateObj.selectedNotebookValue] = tempSelectedNotebook;
-            console.log(tempNotebooks);
-            var newPageCheck = stateObj.isNewPage;
+            tempNotebooks[pageStateObj.selectedNotebookValue] = tempSelectedNotebook;
+            var newPageCheck = pageStateObj.isNewPage;
             if(newPageCheck){newPageCheck = false};
             let obj ={
                 Notebooks: tempNotebooks,
@@ -671,16 +844,18 @@ class PageComponent extends Component {
                 noteView:'',
                 pageView:'',
                 isNewPage: newPageCheck,
-                isNewNote: true,              
+                isNewNote: true,   
+                pageCopyToActive:false,    
+                pageMoveToActive:false,       
             };
             this.props.pageComponentSave(obj);
     }
 
     removePage() {
-        let stateObj = this.props.stateObj;
+        let pageStateObj = this.props.stateObj;
 
-        let index = stateObj.selectedNotebookValue;
-        let tempNotebookList = stateObj.Notebooks;
+        let index = pageStateObj.selectedNotebookValue;
+        let tempNotebookList = pageStateObj.Notebooks;
         let pageIndex = tempNotebookList[index].selectedPageValue;
 
 
@@ -697,11 +872,9 @@ class PageComponent extends Component {
         if(tempPageList.length > 0){
             hasPages = true;
             for (let x = 0; x < tempPageList.length; x++) {
-                console.log(x);
-                tempPageList[x].section = x;
+                tempPageList[x].pageNumber = x;
             }
             let newIndex = pageIndex < tempPageList.length ? pageIndex : pageIndex - 1;
-            console.log(newIndex);
             tempNotebookList[index].PageList = tempPageList;
             tempNotebookList[index].DeletedPageList = tempDPageList;
             tempNotebookList[index].selectedPageValue = newIndex
@@ -725,6 +898,8 @@ class PageComponent extends Component {
             noteTitle:tempNoteTitle,
             isNewNote: !hasNotes,
             isNewPage: !hasPages,
+            pageCopyToActive:false,
+            pageMoveToActive:false,
         };
         this.props.pageComponentSave(obj);
     }
@@ -734,31 +909,111 @@ class PageComponent extends Component {
         var pageSelection = [];
         if (pageStateObj.Notebooks[pageStateObj.selectedNotebookValue].PageList != undefined && pageStateObj.Notebooks[pageStateObj.selectedNotebookValue].PageList.length > 0) {
             pageSelection = pageStateObj.Notebooks[pageStateObj.selectedNotebookValue].PageList.map((e) =>
-                <option key={e.section} value={e.section}>
-                    {e.name}  ({e.date}) - {e.texts.length}
+                <option key={e.pageNumber} value={e.pageNumber}>
+                    #{e.pageNumber + 1} : {e.name}  ({e.date}) - {e.texts.length}
                 </option>
             );
         }
+        var code;
+        if(pageStateObj.isNewPage){
+           code = (
+                <div>
+                    <label htmlFor="title">Page:</label>
+                    <button onClick={this.addPage}>New Page</button>
+                </div>
+            )
+        }else if(this.state.copyToSet){
+           let notebookSelect = pageStateObj.Notebooks.map((e) =>
+                <option key={e.ID} value={e.ID}>
+                    #{e.ID + 1} - {e.title}
+                </option>
+            );
+            let pageSelect = pageStateObj.Notebooks[this.state.notebookNumber].PageList.map((e)=>
+                <option key={e.ID} value={e.ID}>
+                    {e.pageNumber + 1} 
+                </option>
+            );
+            code = (
+                <div>
+                    <div>
+                        <label htmlFor="title">Page: </label>
+                        <select id="selectPage" onChange={this.selectPage} value={pageStateObj.Notebooks[pageStateObj.selectedNotebookValue].selectedPageValue}>
+                            {pageSelection}
+                        </select>
+                        <input type="text" id="title" name="title" value={pageStateObj.Notebooks[pageStateObj.selectedNotebookValue].selectedPage.name} onChange={this.handlePageNameChange} />
+                        <button onClick={this.removePage} id={pageStateObj.Notebooks[pageStateObj.selectedNotebookValue].selectedPage.pageNumber}>Remove Page</button>
+                        <button onClick={this.addPage}>New Page</button>
+                        <button onClick={this.copyToSet}>Copy To</button>
+                        <button onClick={this.moveToSet}>Move To</button>
+                    </div>
+                    <div>
+                        <select id="pageNotebookSelect" value={this.state.notebookNumber} onChange={this.selectToNotebook}>
+                            {notebookSelect}
+                        </select>
+                        <label>Page # </label>
+                        <select id='pageNumber' value={this.state.pageNumber} onChange={this.pageNumberOnChange}>
+                            {pageSelect}
+                        </select>
+                        <button onClick={this.pageCopyTo}>Copy</button>
+                    </div>
+                    
+                </div>
 
-        var code = pageStateObj.isNewPage ? 
-        (
-            <div>
-                <label htmlFor="title">Page:</label>
-                <button onClick={this.addPage}>New Page</button>
-            </div>
-        ) : (
+           )
+        }else if(this.state.moveToSet){
+           let notebookSelect = pageStateObj.Notebooks.map((e) =>
+                <option key={e.ID} value={e.ID}>
+                    #{e.ID + 1} - {e.title}
+                </option>
+            );
+            let pageSelect = pageStateObj.Notebooks[this.state.notebookNumber].PageList.map((e)=>
+                <option key={e.ID} value={e.ID}>
+                    {e.pageNumber + 1} 
+                </option>
+            );
+            code = (
+                <div>
+                    <div>
+                        <label htmlFor="title">Page: </label>
+                        <select id="selectPage" onChange={this.selectPage} value={pageStateObj.Notebooks[pageStateObj.selectedNotebookValue].selectedPageValue}>
+                            {pageSelection}
+                        </select>
+                        <input type="text" id="title" name="title" value={pageStateObj.Notebooks[pageStateObj.selectedNotebookValue].selectedPage.name} onChange={this.handlePageNameChange} />
+                        <button onClick={this.removePage} id={pageStateObj.Notebooks[pageStateObj.selectedNotebookValue].selectedPage.pageNumber}>Remove Page</button>
+                        <button onClick={this.addPage}>New Page</button>
+                        <button onClick={this.copyToSet}>Copy To</button>
+                        <button onClick={this.moveToSet}>Move To</button>
+                    </div>
+                    <div>
+                        <select id="pageNotebookSelect" value={this.state.notebookNumber} onChange={this.selectToNotebook}>
+                            {notebookSelect}
+                        </select>
+                        <label>Page # </label>
+                        <select id='pageNumber' value={this.state.pageNumber} onChange={this.pageNumberOnChange}>
+                            {pageSelect}
+                        </select>
+                        <button onClick={this.pageMoveTo}>Move</button>
+                    </div>
+                    
+                </div>
+
+           )
+        }else{
+           code = (
+                <div>
+                    <label htmlFor="title">Page: </label>
+                    <select id="selectPage" onChange={this.selectPage} value={pageStateObj.Notebooks[pageStateObj.selectedNotebookValue].selectedPageValue}>
+                        {pageSelection}
+                    </select>
+                    <input type="text" id="title" name="title" value={pageStateObj.Notebooks[pageStateObj.selectedNotebookValue].selectedPage.name} onChange={this.handlePageNameChange} />
+                    <button onClick={this.removePage} id={pageStateObj.Notebooks[pageStateObj.selectedNotebookValue].selectedPage.pageNumber}>Remove Page</button>
+                    <button onClick={this.addPage}>New Page</button>
+                    <button onClick={this.copyToSet}>Copy To</button>
+                        <button onClick={this.moveToSet}>Move To</button>
+                </div>
+           )
+        }
          
-         <div>
-             <label htmlFor="title">Page:</label>
-             <select id="selectPage" onChange={this.selectPage} value={pageStateObj.Notebooks[pageStateObj.selectedNotebookValue].selectedPageValue}>
-                 {pageSelection}
-             </select>
-             <input type="text" id="title" name="title" value={pageStateObj.Notebooks[pageStateObj.selectedNotebookValue].selectedPage.name} onChange={this.handlePageNameChange} />
-             <button onClick={this.removePage} id={pageStateObj.Notebooks[pageStateObj.selectedNotebookValue].selectedPage.section}>Remove Page</button>
-             <button onClick={this.addPage}>New Page</button>
-         </div>
-     
-    )
         return (
             <div className="page-inner-wrapper">
                      {code}
@@ -774,6 +1029,11 @@ class NoteComponent extends Component {
 
         this.state = {
             noteEdit:false,
+            notebookNumber: 0,
+            pageNumber: 0,
+            noteNumber:0,
+            copyToSet:false,
+            noteMoveTo:false,
         };
 
         this.removeNote = this.removeNote.bind(this);
@@ -784,7 +1044,235 @@ class NoteComponent extends Component {
         this.handleChangeNoteEdit = this.handleChangeNoteEdit.bind(this);
         this.handleNoteTitleChange = this.handleNoteTitleChange.bind(this);
 
+    
+        this.copyToSet = this.copyToSet.bind(this);
+        this.moveToSet = this.moveToSet.bind(this);
+
+        this.noteCopyTo = this.noteCopyTo.bind(this);
+        this.noteMoveTo = this.noteMoveTo.bind(this);
+
+
+        this.selectToNotebook = this.selectToNotebook.bind(this);
+        this.selectToPage = this.selectToPage.bind(this);
+
+        this.noteNumberOnChange = this.noteNumberOnChange.bind(this);
     }
+    moveToSet(){
+        let value = !this.state.moveToSet;
+        this.setState({
+            moveToSet:value,
+            copyToSet:false,
+        });
+    }
+    noteMoveTo(){
+        var noteStateObj = this.props.stateObj;
+        let moveToNotebook = this.state.notebookNumber;
+        let moveToPage = Number(this.state.pageNumber);
+        let moveNoteTo = Number(this.state.noteNumber);
+        let notebooks = noteStateObj.Notebooks;
+        let notebookIndex = noteStateObj.selectedNotebookValue;
+        let pagelists = notebooks[notebookIndex].PageList;
+        let moveNoteValue = cloneDeep(pagelists[notebooks[notebookIndex].selectedPageValue].texts[notebooks[notebookIndex].selectNoteValue]) ;
+        let textlist = cloneDeep(notebooks[moveToNotebook].PageList[moveToPage].texts);
+
+
+        console.log(moveNoteTo)
+        console.log(notebookIndex);
+        console.log(noteStateObj.Notebooks[notebookIndex]);
+        console.log(noteStateObj.Notebooks[notebookIndex].selectedPageValue);
+        if(moveToPage === notebooks[notebookIndex].selectedPageValue){
+            textlist.splice(notebooks[notebookIndex].selectNoteValue, 1);
+        }
+
+        let noteSizeCheck = textlist.length;       
+        let temp = []
+        console.log('noteSizeCheck:' + noteSizeCheck);
+        console.log('copyNoteTo:' + moveNoteTo);
+        if(noteSizeCheck >= moveNoteTo){ 
+            console.log('if One');
+            if(noteSizeCheck === moveNoteTo){
+                console.log('if Two');
+                temp = textlist;
+                temp.push(moveNoteValue);
+            }else{
+                
+            console.log('else One');         
+                for(let x = 0; x < textlist.length; x++){
+                    if(x === moveNoteTo){
+                        console.log('if Three');
+                        temp.push(moveNoteValue);
+                        temp.push(textlist[x]);
+                    }else{
+                        console.log('else two');
+                        temp.push(textlist[x]);
+                    }
+                }
+            }
+        }else{
+            temp.push(moveNoteValue);
+        }
+        for (let x = 0; x < temp.length; x++) {
+            temp[x].id = x;
+        }
+
+
+            if(moveNoteTo !== noteStateObj.Notebooks[notebookIndex].selectedPageValue){
+                let leavingNotelist = cloneDeep(notebooks[notebookIndex].PageList[notebooks[notebookIndex].selectedPageValue].texts);
+                leavingNotelist.splice(notebooks[notebookIndex].selectNoteValue, 1);
+                notebooks[notebookIndex].PageList[notebooks[notebookIndex].selectedPageValue].texts = leavingNotelist;
+            }
+
+
+            notebooks[moveToNotebook].PageList[moveToPage].texts = temp;
+
+            let tempPageView = '';
+            let tempNoteView = '';
+            let tempNoteTitle = '';
+            let hasNotes = false;
+            let hasPages = false;
+            console.log(notebooks);
+            console.log(notebooks[notebookIndex]);
+            console.log(notebooks[notebookIndex].PageList);
+            console.log(notebooks[notebookIndex].PageList[notebooks[notebookIndex].selectedPageValue]);
+            console.log(notebooks[notebookIndex].PageList[notebooks[notebookIndex].selectedPageValue].texts);
+            console.log(notebooks[notebookIndex].PageList[notebooks[notebookIndex].selectedPageValue].texts[notebooks[notebookIndex].selectNoteValue]);
+            if(notebooks[noteStateObj.selectedNotebookValue].PageList.length > 0){
+                hasPages = true;
+                if(notebooks[noteStateObj.selectedNotebookValue].PageList[notebooks[noteStateObj.selectedNotebookValue].selectedPageValue].texts.length > 0){
+                    notebooks[moveToNotebook].selectNoteValue = notebooks[noteStateObj.selectedNotebookValue].selectNoteValue;
+                    tempPageView = readOnlyPageDisplay(notebooks[noteStateObj.selectedNotebookValue].PageList[notebooks[noteStateObj.selectedNotebookValue].selectedPageValue])
+                    tempNoteView= readOnlyNoteDisplay(notebooks[notebookIndex].PageList[notebooks[notebookIndex].selectedPageValue].texts[0]);
+                    tempNoteTitle = notebooks[notebookIndex].PageList[notebooks[notebookIndex].selectedPageValue].texts[0].title;
+                    hasNotes = true;
+                };
+            }
+            let obj ={
+                Notebooks: notebooks,
+                pageView: tempPageView,
+                noteView:tempNoteView,
+                noteTitle:tempNoteTitle,
+                isNewNote: !hasNotes,
+                isNewPage: !hasPages,
+            };
+            this.setState({
+                pageNumber: 0,
+                notebookNumber: 0,
+                noteNumber:0,
+                copyToSet:false,
+                moveToSet:false,
+            });
+    
+            this.props.noteComponentSave(obj);
+            
+
+        }
+    copyToSet(){
+        let value = !this.state.copyToSet;
+        this.setState({
+            moveToSet:false,
+            copyToSet:value,
+        });
+    }
+    noteCopyTo(){
+        var noteStateObj = this.props.stateObj;
+        let copyToNotebook = this.state.notebookNumber;
+        let copyToPage = Number(this.state.pageNumber);
+        let copyNoteTo = Number(this.state.noteNumber);
+        let notebooks = noteStateObj.Notebooks;
+        let notebookIndex = noteStateObj.selectedNotebookValue;
+        let pagelists = notebooks[notebookIndex].PageList;
+        let copyNoteValue = cloneDeep(pagelists[notebooks[notebookIndex].selectedPageValue].texts[notebooks[notebookIndex].selectNoteValue]) ;
+        let textlist = cloneDeep(notebooks[copyToNotebook].PageList[copyToPage].texts);
+
+        let noteSizeCheck = textlist.length;       
+        let temp = []
+        console.log('noteSizeCheck:' + noteSizeCheck);
+        console.log('copyNoteTo:' + copyNoteTo);
+        if(noteSizeCheck >= copyNoteTo){ 
+            console.log('if One');
+            if(noteSizeCheck === copyNoteTo){
+                console.log('if Two');
+                temp = textlist;
+                temp.push(copyNoteValue);
+            }else{
+                
+            console.log('else One');         
+                for(let x = 0; x < textlist.length; x++){
+                    if(x === copyNoteTo){
+                        console.log('if Three');
+                        temp.push(copyNoteValue);
+                        temp.push(textlist[x]);
+                    }else{
+                        console.log('else two');
+                        temp.push(textlist[x]);
+                    }
+                }
+            }
+        }else{
+            temp.push(copyNoteValue);
+        }
+        for (let x = 0; x < temp.length; x++) {
+            temp[x].id = x;
+        }
+
+        notebooks[copyToNotebook].PageList[copyToPage].texts = temp;
+
+            let tempPageView = '';
+            let tempNoteView = '';
+            let tempNoteTitle = '';
+            let hasNotes = false;
+            if(notebooks[noteStateObj.selectedNotebookValue].PageList[notebooks[noteStateObj.selectedNotebookValue].selectedPageValue].texts.length > 0){
+                notebooks[copyToNotebook].selectNoteValue = notebooks[noteStateObj.selectedNotebookValue].selectNoteValue;
+                tempPageView = readOnlyPageDisplay(notebooks[noteStateObj.selectedNotebookValue].PageList[notebooks[noteStateObj.selectedNotebookValue].selectedPageValue])
+                tempNoteView= readOnlyNoteDisplay(notebooks[noteStateObj.selectedNotebookValue].PageList[notebooks[noteStateObj.selectedNotebookValue].selectedPageValue].texts[notebooks[noteStateObj.selectedNotebookValue].selectNoteValue]);
+                tempNoteTitle = notebooks[noteStateObj.selectedNotebookValue].PageList[notebooks[noteStateObj.selectedNotebookValue].selectedPageValue].texts[notebooks[noteStateObj.selectedNotebookValue].selectNoteValue].title;
+                hasNotes = true;
+            };
+            let obj ={
+                Notebooks: notebooks,
+                pageView: tempPageView,
+                noteView:tempNoteView,
+                noteTitle:tempNoteTitle,
+                isNewNote: !hasNotes,
+                isNewPage: false,
+            };
+            this.setState({
+                pageNumber: 0,
+                notebookNumber: 0,
+                noteNumber:0,
+                copyToSet:false,
+                moveToSet:false,
+
+            });
+    
+            this.props.noteComponentSave(obj);
+    }
+    selectToNotebook(event){        
+        let target = event.target;
+        let value = Number(target.value);
+        console.log(value);
+        this.setState({
+            notebookNumber: value,
+        });
+    }
+    selectToPage(event){
+        let target = event.target;
+        let value = target.value;
+        console.log(value);
+        this.setState({
+            pageNumber:value,
+        })
+    }
+    noteNumberOnChange(event){
+        let target = event.target;
+        let value = target.value;
+        console.log(value);
+        this.setState({
+            noteNumber:value,
+        })
+    }
+
+
     handleChangeNoteEdit(event){
         var noteStateObj = this.props.stateObj;
         let target = event.target;
@@ -839,8 +1327,6 @@ handleNoteTitleChange(event) {
             tempNotebooks[notebookIndex].selectNoteValue = newIndex;
             tempNotebooks[notebookIndex].PageList[noteStateObj.Notebooks[notebookIndex].selectedPageValue].deletedTexts = tempDeletedTexts;
             tempPageView = readOnlyPageDisplay(tempNotebooks[notebookIndex].PageList[noteStateObj.Notebooks[notebookIndex].selectedPageValue])
-            console.log(tempNotebooks[notebookIndex].PageList[noteStateObj.Notebooks[notebookIndex].selectedPageValue].texts);
-            console.log(tempNotebooks[notebookIndex].selectNoteValue);
             tempNoteView= readOnlyNoteDisplay(tempNotebooks[notebookIndex].PageList[noteStateObj.Notebooks[notebookIndex].selectedPageValue].texts[tempNotebooks[notebookIndex].selectNoteValue]);
             tempNoteTitle = tempNotebooks[notebookIndex].selectedPage.texts[tempNotebooks[notebookIndex].selectNoteValue].title;
             hasNotes = true;
@@ -888,7 +1374,6 @@ handleNoteTitleChange(event) {
         var noteStateObj = this.props.stateObj;  
         let targe = e.target;
         let value = targe.value;
-        //let tempSelected = document.getElementById("selectNote");
         let id = value;
         let tempNotebooks = noteStateObj.Notebooks;
         let tempSelectedNotebook = tempNotebooks[noteStateObj.selectedNotebookValue];
@@ -920,7 +1405,6 @@ handleNoteTitleChange(event) {
             </option>
             );
         }
-        console.log(noteStateObj);
         var code;
         if(noteStateObj.isNewNote){
             code = (
@@ -929,6 +1413,7 @@ handleNoteTitleChange(event) {
                 </div>
             )
         }else if(this.state.noteEdit){
+            console.log('2')
             code = (
                 <div>
                    <label>Note:</label>
@@ -947,7 +1432,30 @@ handleNoteTitleChange(event) {
                    </div>
                 </div>
            )
-        } else{
+        }else if(this.state.copyToSet){
+            console.log('CopyTo')
+            console.log(noteStateObj);
+
+            let notebookSelect = noteStateObj.Notebooks.map((e) =>
+                 <option key={e.ID} value={e.ID}>
+                     #{e.ID + 1} - {e.title}
+                 </option>
+             );
+             let pageSelect = noteStateObj.Notebooks[this.state.notebookNumber].PageList.map((e) =>
+                <option key={e.pageNumber} value={e.pageNumber}>
+                    #{e.pageNumber + 1} : {e.name}
+                </option>
+              ) ;
+              let noteSelect = undefined
+              console.log(this.state.pageNumber);
+              if(noteStateObj.Notebooks[this.state.notebookNumber].PageList[this.state.pageNumber].texts !== undefined){
+
+              noteSelect = noteStateObj.Notebooks[this.state.notebookNumber].PageList[this.state.pageNumber].texts.map((e)=>
+              <option key={e.id} value={e.id}>
+                  {e.id + 1}
+              </option>
+
+            )};
             code = (
                 <div>
                    <label>Note:</label>
@@ -958,6 +1466,99 @@ handleNoteTitleChange(event) {
                        <input type="text" id="title" name="title" value={noteStateObj.noteTitle} onChange={this.handleNoteTitleChange} />
                         <button onClick={this.editNote} id="noteEdit">Edit</button>
                         <button onClick={this.removeNote} value={noteStateObj.Notebooks[noteStateObj.selectedNotebookValue].selectNoteValue} id={noteStateObj.Notebooks[noteStateObj.selectedNotebookValue].selectNoteValue}>Remove Note</button>
+                        <button onClick={this.copyToSet}>Copy To</button>
+                        <button onClick={this.moveToSet}>Move To</button>                    
+                        <div>
+                            <label>Notebooks:</label>
+                            <select id="noteNotebookSelect" value={this.state.notebookNumber} onChange={this.selectToNotebook}>
+                                {notebookSelect}
+                            </select>
+                            <label>Pages:</label>
+                            <select id="notePageSelect" value={this.state.pageNumber} onChange={this.selectToPage}>
+                                {pageSelect}
+                            </select>
+                            <label>Note # </label>
+                            <select id='pageNumber' value={this.state.noteNumber} onChange={this.noteNumberOnChange}>
+                                {noteSelect}
+                            </select>
+                            <button onClick={this.noteCopyTo}>Copy</button>
+                        </div>
+                        <div className="TheNote">
+                           <div className="readOnlyDisplay">
+                               {noteStateObj.noteView}
+                           </div>
+                       </div>
+                   </div>
+                </div>
+           )
+        }else if(this.state.moveToSet){
+                let notebookSelect = noteStateObj.Notebooks.map((e) =>
+                    <option key={e.ID} value={e.ID}>
+                        #{e.ID + 1} - {e.title}
+                    </option>
+                );
+                let pageSelect = noteStateObj.Notebooks[noteStateObj.selectedNotebookValue].PageList.map((e) =>
+                    <option key={e.pageNumber} value={e.pageNumber}>
+                        #{e.pageNumber + 1} : {e.name}
+                    </option>
+                );
+                let noteSelect = undefined;
+                if(noteStateObj.Notebooks[this.state.notebookNumber].PageList[this.state.pageNumber].texts !== undefined){
+  
+                 noteSelect = noteStateObj.Notebooks[this.state.notebookNumber].PageList[this.state.pageNumber].texts.map((e)=>
+                <option key={e.id} value={e.id}>
+                    {e.id + 1}
+                </option>
+  
+              )};
+            code = (
+                <div>
+                   <label>Note:</label>
+                   <div id="notes">
+                       <select id="selectNote" onChange={this.selectNote} value={noteStateObj.Notebooks[noteStateObj.selectedNotebookValue].selectNoteValue}>
+                           {noteSelection}
+                       </select>                                        
+                       <input type="text" id="title" name="title" value={noteStateObj.noteTitle} onChange={this.handleNoteTitleChange} />
+                        <button onClick={this.editNote} id="noteEdit">Edit</button>
+                        <button onClick={this.removeNote} value={noteStateObj.Notebooks[noteStateObj.selectedNotebookValue].selectNoteValue} id={noteStateObj.Notebooks[noteStateObj.selectedNotebookValue].selectNoteValue}>Remove Note</button>
+                        <button onClick={this.copyToSet}>Copy To</button>
+                        <button onClick={this.moveToSet}>Move To</button>                     
+                        <div>
+                            <label>Notebooks:</label>
+                            <select id="noteNotebookSelect" value={this.state.notebookNumber} onChange={this.selectToNotebook}>
+                                {notebookSelect}
+                            </select>
+                            <label>Pages:</label>
+                            <select id="notePageSelect" value={this.state.pageNumber} onChange={this.selectToPage}>
+                                {pageSelect}
+                            </select>
+                            <label>Note # </label>
+                            <select id='pageNumber' value={this.state.noteNumber} onChange={this.noteNumberOnChange}>
+                                {noteSelect}
+                            </select>
+                            <button onClick={this.noteMoveTo}>Move</button>
+                        </div>
+                        <div className="TheNote">
+                           <div className="readOnlyDisplay">
+                               {noteStateObj.noteView}
+                           </div>
+                       </div>
+                   </div>
+                </div>
+           )
+        }else {
+            code = (
+                <div>
+                   <label>Note:</label>
+                   <div id="notes">
+                       <select id="selectNote" onChange={this.selectNote} value={noteStateObj.Notebooks[noteStateObj.selectedNotebookValue].selectNoteValue}>
+                           {noteSelection}
+                       </select>                                        
+                       <input type="text" id="title" name="title" value={noteStateObj.noteTitle} onChange={this.handleNoteTitleChange} />
+                        <button onClick={this.editNote} id="noteEdit">Edit</button>
+                        <button onClick={this.removeNote} value={noteStateObj.Notebooks[noteStateObj.selectedNotebookValue].selectNoteValue} id={noteStateObj.Notebooks[noteStateObj.selectedNotebookValue].selectNoteValue}>Remove Note</button>
+                        <button onClick={this.copyToSet}>Copy To</button>
+                        <button onClick={this.moveToSet}>Move To</button> 
                         <div className="TheNote">
                            <div className="readOnlyDisplay">
                                {noteStateObj.noteView}
@@ -983,73 +1584,31 @@ class AwesomeTextBoxComponent extends Component {
         this.handleChange = this.handleChange.bind(this);
     }
     addNote(event) {
-        /*add a note section.*/
         var atbStateObj = this.props.stateObj;
         let tempNotebooks = atbStateObj.Notebooks;
         let tempSelectedNotebook = atbStateObj.Notebooks[atbStateObj.selectedNotebookValue];
-        //let globaltaglist = tempSelectedNotebook.globalTagList;
         let dataIndex = tempSelectedNotebook.selectedPageValue;
-        //console.log(dataIndex);
         if (tempSelectedNotebook.mainText != undefined && tempSelectedNotebook.mainText.trim() !== '') {
             let d = new Date();
             let tempId = tempSelectedNotebook.PageList.length > 0 ? tempSelectedNotebook.PageList[dataIndex].texts.length : 0;
             let tempArray = [];
             tempArray = tempSelectedNotebook.PageList;
             let tempText = tempSelectedNotebook.mainText;
-            
-            /*
-            let tempTagList = [];
-            //global tag assign
-            
-            globaltaglist.forEach((a) => {
-                tempText.split(' ').forEach((b) => {
-                    if (b === a) {
-                        tempTagList.push(b);
-                    }
-                });
-            });
-            
-            let reg = /(\*\-[^\s]+)/g;
-            let tempTagString = '';
-            let tempTagArray = [...tempText.matchAll(reg)];
-            tempTagArray.forEach((a) => {
-                let tempString = a['0'];
-                tempString = tempString.replace(/(\*\-)/g, '');
-                tempTagList.push(tempString);
-                globaltaglist.push(tempString);
-            });
-            let globalTemp = new Set();
-            let localTemp = new Set();
-            tempTagList.forEach((a) => { localTemp.add(a) });
-            globaltaglist.forEach((c) => {
-                globalTemp.add(c);
-            });
-            globaltaglist = [...globalTemp];
-            tempTagList = [...localTemp];
-            tempTagList.forEach((a) => {
-                tempTagString += ' (' + a + ') ';
-            });
-            */
-            //global tag assign
             let tempObject = {
                 original_id: tempId,
                 original_text: tempText,
                 id: tempId,
                 title:'<New Note>',
-                text: tempText + "\n",//.replace(/(\*\-)/g, '') + "\n",
+                text: tempText + "\n",
                 time: d.getHours() + ":" + d.getMinutes() + ":" + d.getSeconds(),
                 date: (d.getMonth() + 1) + '/' + d.getDate() + '/' + d.getFullYear(),
-                //tags: '',
-                //tagString: ''
             }
             
             tempArray[dataIndex].texts.push(tempObject);
-            //note create section here
             let tempPageDisplay = readOnlyPageDisplay(tempArray[dataIndex]);
             let tempNoteDisplay = readOnlyNoteDisplay(tempArray[dataIndex].texts[tempId]);
             tempSelectedNotebook.PageList = tempArray;
             tempSelectedNotebook.selectedPage = tempArray[dataIndex];
-            //tempSelectedNotebook.globalTagList = globaltaglist;
             tempSelectedNotebook.selectedNote = tempObject;
             tempSelectedNotebook.selectNoteValue = tempId;
             tempSelectedNotebook.mainText = '';
@@ -1065,8 +1624,6 @@ class AwesomeTextBoxComponent extends Component {
                 isNewNote:isNewNoteCheck,
             };
             this.props.atbComponentSave(obj);
-            //this.save();
-           //this.myRefresh();
         }
 
 
@@ -1081,7 +1638,7 @@ class AwesomeTextBoxComponent extends Component {
         let tempNotebooks = atbStateObj.Notebooks;
         let tempSelectedNotebook = atbStateObj.Notebooks[atbStateObj.selectedNotebookValue];
         tempSelectedNotebook[name] = value;
-        console.log(tempSelectedNotebook);
+       // console.log(tempSelectedNotebook);
         tempNotebooks[atbStateObj.selectedNotebookValue] = tempSelectedNotebook;
         let obj ={
             Notebooks: tempNotebooks
@@ -1089,27 +1646,6 @@ class AwesomeTextBoxComponent extends Component {
 
         this.props.atbComponentHandleChange(obj);
     }
-    /*
-  tagAssign() {
-        this.mydebug('tagAssign');
-        let tempSelectedNotebook = this.state.selectedNotebook;
-        let textarea = document.getElementById("awesometextarea");
-        let formatted = '';
-        let len = textarea.value.length;
-        let start = textarea.selectionStart;
-        let end = textarea.selectionEnd;
-        let sel = textarea.value.substring(start, end);
-        let replace = '' + sel;
-
-        textarea.value = textarea.value.substring(0, start) + replace + textarea.value.substring(end, len);
-        formatted = textarea.value;
-        tempSelectedNotebook.mainText = formatted;
-        this.setState({
-            selectedNotebook: tempSelectedNotebook
-        });
-
-    }
-*/
     render() {
         var atbStateObj = this.props.stateObj;
         return (
@@ -1120,7 +1656,28 @@ class AwesomeTextBoxComponent extends Component {
                         <textarea className='main-text' name="mainText" id="awesometextarea" value={atbStateObj.Notebooks[atbStateObj.selectedNotebookValue].mainText} onChange={this.handleChange} rows="10" cols="50" />
                     </div>
                     <div>                        
-                        <button onClick={this.addNote} id={atbStateObj.Notebooks[atbStateObj.selectedNotebookValue].selectedPage.section}>Add Note</button>
+                        <button onClick={this.addNote} id={atbStateObj.Notebooks[atbStateObj.selectedNotebookValue].selectedPage.pageNumber}>Add Note</button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+}
+
+class PageViewComponent extends Component{
+    constructor(props){
+        super(props);
+    }
+
+    render(){
+        let pageViewStateObj = this.props.stateObj
+        return (
+            <div className="page-col-two">
+                <label>Page View:</label>
+
+                <div className="ThePage">
+                    <div className="readOnlyDisplay">
+                        {pageViewStateObj.pageView}
                     </div>
                 </div>
             </div>
