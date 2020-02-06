@@ -256,7 +256,7 @@ class LandingPage extends Component {
         this.landingNotebookAdd = this.landingNotebookAdd.bind(this);
     }
     landingNotebookAdd() {
-        //console.log("1");
+        ////console.log("1");
         let d = new Date();
         let tempList = [];
         let tempID = 0;
@@ -336,11 +336,11 @@ class LandingPage extends Component {
                 pageView: tempPageView,
                 noteView: tempNoteView,
             };
-            console.log(obj);
+            //console.log(obj);
             this.props.landingUpload(obj);
         } catch (err) {
-            console.log('catch');
-            console.log(err);
+            //console.log('catch');
+            //console.log(err);
 
         }
     }
@@ -479,9 +479,9 @@ selectNotebook(event) {
         let hasNotes = false;
         let tempNoteView = '';
         let noteTitleCheck = '';
-        console.log(selectedTempNotebook);
-        console.log(selectedTempNotebook.selectedPageValue);
-        console.log(selectedTempNotebook.PageList);
+        //console.log(selectedTempNotebook);
+        //console.log(selectedTempNotebook.selectedPageValue);
+        //console.log(selectedTempNotebook.PageList);
         if(selectedTempNotebook.PageList.length > 0){
              hasPages = true;
              let tempIndex = selectedTempNotebook.selectedPageValue != undefined ? selectedTempNotebook.selectedPageValue : 0;
@@ -622,11 +622,11 @@ class PageComponent extends Component {
             }else{
                 temp.push(copyPageValue);
             }
-            console.log(temp);
+            //console.log(temp);
             for (let x = 0; x < temp.length; x++) {
                 temp[x].pageNumber = x;
             }
-            console.log(temp);
+            //console.log(temp);
 
             if(copyToNotebook !== pageStateObj.selectedNotebookValue){
                 let leavingPagelist = cloneDeep(notebooks[pageStateObj.selectedNotebookValue].PageList);
@@ -788,7 +788,7 @@ class PageComponent extends Component {
         let pageStateObj = this.props.stateObj;
         let target = event.target;
         let value = Number(target.value);
-        console.log(value);
+        //console.log(value);
         let id = value;
         let tempNotebook = pageStateObj.Notebooks;
         let tempSelectedNotebook = tempNotebook[pageStateObj.selectedNotebookValue];
@@ -799,7 +799,7 @@ class PageComponent extends Component {
         let tempNoteView = '';
         let tempNoteTitle = '';
         let hasNotes = false;
-        console.log(tempSelectedNotebook);
+        //console.log(tempSelectedNotebook);
         if(tempSelectedNotebook.PageList[tempSelectedNotebook.selectedPageValue].texts.length > 0){
             tempPageView = readOnlyPageDisplay(tempSelectedNotebook.PageList[tempSelectedNotebook.selectedPageValue])
             tempNoteView= readOnlyNoteDisplay(tempSelectedNotebook.PageList[tempSelectedNotebook.selectedPageValue].texts[0]);
@@ -1076,34 +1076,34 @@ class NoteComponent extends Component {
         let textlist = cloneDeep(notebooks[moveToNotebook].PageList[moveToPage].texts);
 
 
-        console.log(moveNoteTo)
-        console.log(notebookIndex);
-        console.log(noteStateObj.Notebooks[notebookIndex]);
-        console.log(noteStateObj.Notebooks[notebookIndex].selectedPageValue);
+        //console.log(moveNoteTo)
+        //console.log(notebookIndex);
+        //console.log(noteStateObj.Notebooks[notebookIndex]);
+        //console.log(noteStateObj.Notebooks[notebookIndex].selectedPageValue);
         if(moveToPage === notebooks[notebookIndex].selectedPageValue){
             textlist.splice(notebooks[notebookIndex].selectNoteValue, 1);
         }
 
         let noteSizeCheck = textlist.length;       
         let temp = []
-        console.log('noteSizeCheck:' + noteSizeCheck);
-        console.log('copyNoteTo:' + moveNoteTo);
+        //console.log('noteSizeCheck:' + noteSizeCheck);
+        //console.log('copyNoteTo:' + moveNoteTo);
         if(noteSizeCheck >= moveNoteTo){ 
-            console.log('if One');
+            //console.log('if One');
             if(noteSizeCheck === moveNoteTo){
-                console.log('if Two');
+                //console.log('if Two');
                 temp = textlist;
                 temp.push(moveNoteValue);
             }else{
                 
-            console.log('else One');         
+            //console.log('else One');         
                 for(let x = 0; x < textlist.length; x++){
                     if(x === moveNoteTo){
-                        console.log('if Three');
+                        //console.log('if Three');
                         temp.push(moveNoteValue);
                         temp.push(textlist[x]);
                     }else{
-                        console.log('else two');
+                        //console.log('else two');
                         temp.push(textlist[x]);
                     }
                 }
@@ -1130,12 +1130,12 @@ class NoteComponent extends Component {
             let tempNoteTitle = '';
             let hasNotes = false;
             let hasPages = false;
-            console.log(notebooks);
-            console.log(notebooks[notebookIndex]);
-            console.log(notebooks[notebookIndex].PageList);
-            console.log(notebooks[notebookIndex].PageList[notebooks[notebookIndex].selectedPageValue]);
-            console.log(notebooks[notebookIndex].PageList[notebooks[notebookIndex].selectedPageValue].texts);
-            console.log(notebooks[notebookIndex].PageList[notebooks[notebookIndex].selectedPageValue].texts[notebooks[notebookIndex].selectNoteValue]);
+            //console.log(notebooks);
+            //console.log(notebooks[notebookIndex]);
+            //console.log(notebooks[notebookIndex].PageList);
+            //console.log(notebooks[notebookIndex].PageList[notebooks[notebookIndex].selectedPageValue]);
+            //console.log(notebooks[notebookIndex].PageList[notebooks[notebookIndex].selectedPageValue].texts);
+            //console.log(notebooks[notebookIndex].PageList[notebooks[notebookIndex].selectedPageValue].texts[notebooks[notebookIndex].selectNoteValue]);
             if(notebooks[noteStateObj.selectedNotebookValue].PageList.length > 0){
                 hasPages = true;
                 if(notebooks[noteStateObj.selectedNotebookValue].PageList[notebooks[noteStateObj.selectedNotebookValue].selectedPageValue].texts.length > 0){
@@ -1186,24 +1186,24 @@ class NoteComponent extends Component {
 
         let noteSizeCheck = textlist.length;       
         let temp = []
-        console.log('noteSizeCheck:' + noteSizeCheck);
-        console.log('copyNoteTo:' + copyNoteTo);
+        //console.log('noteSizeCheck:' + noteSizeCheck);
+        //console.log('copyNoteTo:' + copyNoteTo);
         if(noteSizeCheck >= copyNoteTo){ 
-            console.log('if One');
+            //console.log('if One');
             if(noteSizeCheck === copyNoteTo){
-                console.log('if Two');
+                //console.log('if Two');
                 temp = textlist;
                 temp.push(copyNoteValue);
             }else{
                 
-            console.log('else One');         
+            //console.log('else One');         
                 for(let x = 0; x < textlist.length; x++){
                     if(x === copyNoteTo){
-                        console.log('if Three');
+                        //console.log('if Three');
                         temp.push(copyNoteValue);
                         temp.push(textlist[x]);
                     }else{
-                        console.log('else two');
+                        //console.log('else two');
                         temp.push(textlist[x]);
                     }
                 }
@@ -1250,7 +1250,7 @@ class NoteComponent extends Component {
     selectToNotebook(event){        
         let target = event.target;
         let value = Number(target.value);
-        console.log(value);
+        //console.log(value);
         this.setState({
             notebookNumber: value,
         });
@@ -1258,7 +1258,7 @@ class NoteComponent extends Component {
     selectToPage(event){
         let target = event.target;
         let value = target.value;
-        console.log(value);
+        //console.log(value);
         this.setState({
             pageNumber:value,
         })
@@ -1266,7 +1266,7 @@ class NoteComponent extends Component {
     noteNumberOnChange(event){
         let target = event.target;
         let value = target.value;
-        console.log(value);
+        //console.log(value);
         this.setState({
             noteNumber:value,
         })
@@ -1413,7 +1413,7 @@ handleNoteTitleChange(event) {
                 </div>
             )
         }else if(this.state.noteEdit){
-            console.log('2')
+            //console.log('2')
             code = (
                 <div>
                    <label>Note:</label>
@@ -1433,8 +1433,8 @@ handleNoteTitleChange(event) {
                 </div>
            )
         }else if(this.state.copyToSet){
-            console.log('CopyTo')
-            console.log(noteStateObj);
+            //console.log('CopyTo')
+            //console.log(noteStateObj);
 
             let notebookSelect = noteStateObj.Notebooks.map((e) =>
                  <option key={e.ID} value={e.ID}>
@@ -1447,7 +1447,7 @@ handleNoteTitleChange(event) {
                 </option>
               ) ;
               let noteSelect = undefined
-              console.log(this.state.pageNumber);
+              //console.log(this.state.pageNumber);
               if(noteStateObj.Notebooks[this.state.notebookNumber].PageList[this.state.pageNumber].texts !== undefined){
 
               noteSelect = noteStateObj.Notebooks[this.state.notebookNumber].PageList[this.state.pageNumber].texts.map((e)=>
@@ -1638,7 +1638,7 @@ class AwesomeTextBoxComponent extends Component {
         let tempNotebooks = atbStateObj.Notebooks;
         let tempSelectedNotebook = atbStateObj.Notebooks[atbStateObj.selectedNotebookValue];
         tempSelectedNotebook[name] = value;
-       // console.log(tempSelectedNotebook);
+       // //console.log(tempSelectedNotebook);
         tempNotebooks[atbStateObj.selectedNotebookValue] = tempSelectedNotebook;
         let obj ={
             Notebooks: tempNotebooks
